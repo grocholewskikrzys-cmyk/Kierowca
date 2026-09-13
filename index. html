@@ -1,1 +1,292 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kierowca - GPS Tracker</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #4CAF50;
+            --accent-hover: #45a049;
+            --danger-color: #f44336;
+            --border-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: white;
+        }
+
+        #startBtn {
+            background-color: var(--accent-color);
+        }
+
+        #startBtn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        #stopBtn {
+            background-color: var(--danger-color);
+        }
+
+        #stopBtn:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .log-container {
+            height: 150px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #b0b0b0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #777;
+            margin-right: 5px;
+        }
+
+        .status-badge.active {
+            background-color: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>
+            <span id="statusBadge" class="status-badge"></span> Kierowca GPS
+        </h1>
+
+        <div class="card">
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Dystans</div>
+                    <div id="distanceVal" class="stat-value">0.00 km</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Czas trwania</div>
+                    <div id="timeVal" class="stat-value">00:00:00</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Prędkość</div>
+                    <div id="speedVal" class="stat-value">0 km/h</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Punkty GPS</div>
+                    <div id="pointsVal" class="stat-value">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button id="startBtn" onclick="startTracking()">Start</button>
+            <button id="stopBtn" onclick="stopTracking()" disabled>Stop</button>
+        </div>
+
+        <div class="card">
+            <div style="font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;">Dziennik zdarzeń:</div>
+            <div id="logContainer" class="log-container">Gotowy do pracy...</div>
+        </div>
+    </div>
+
+    <script>
+        let watchId = null;
+        let startTime = null;
+        let timerInterval = null;
+        let totalDistance = 0;
+        let lastPosition = null;
+        let pointsCount = 0;
+
+        function log(message) {
+            const container = document.getElementById('logContainer');
+            const timeStr = new Date().toLocaleTimeString();
+            container.innerHTML += `[${timeStr}] ${message}<br>`;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Promień Ziemi w metrach
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c; // Wynik w metrach
+        }
+
+        function startTracking() {
+            if (!navigator.geolocation) {
+                alert("Twoja przeglądarka nie wspiera geolokalizacji!");
+                return;
+            }
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('statusBadge').classList.add('active');
+            
+            startTime = new Date();
+            totalDistance = 0;
+            pointsCount = 0;
+            lastPosition = null;
+
+            timerInterval = setInterval(updateTimer, 1000);
+
+            watchId = navigator.geolocation.watchPosition(
+                position => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const speed = position.coords.speed ? position.coords.speed * 3.6 : 0; // m/s na km/h
+                    
+                    pointsCount++;
+                    document.getElementById('pointsVal').innerText = pointsCount;
+                    document.getElementById('speedVal').innerText = Math.round(speed) + ' km/h';
+
+                    if (lastPosition) {
+                        const dist = calculateDistance(lastPosition.lat, lastPosition.lon, lat, lon);
+                        if (dist > 3) { // Ignoruj małe mikro-przesunięcia poniżej 3 metrów w miejscu
+                            totalDistance += dist;
+                            document.getElementById('distanceVal').innerText = (totalDistance / 1000).toFixed(2) + ' km';
+                            lastPosition = { lat, lon };
+                        }
+                    } else {
+                        lastPosition = { lat, lon };
+                    }
+                },
+                error => {
+                    log("Błąd GPS: " + error.message);
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 10000
+                }
+            );
+
+            log("Rozpoczęto śledzenie trasy.");
+        }
+
+        function stopTracking() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            clearInterval(timerInterval);
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('statusBadge').classList.remove('active');
+
+            log("Zatrzymano śledzenie. Łączny dystans: " + (totalDistance / 1000).toFixed(2) + " km.");
+        }
+
+        function updateTimer() {
+            const now = new Date();
+            const diff = Math.floor((now - startTime) / 1000);
+            const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const seconds = String(diff % 60).padStart(2, '0');
+            document.getElementById('timeVal').innerText = `${hours}:${minutes}:${seconds}`;
+        }
+    </script>
+</body
+</html>
 
