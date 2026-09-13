@@ -1,5 +1,4 @@
-<title>Kierowca GPS</title>
- rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#101214;color:#fff;font-family:Arial,sans-serif}.wrap{max-width:620px;margin:auto;padding:10px}.card{background:#1b1e22;border-radius:16px;padding:14px;margin-bottom:10px}h1{margin:0 0 5px}.muted{color:#9aa0a6;font-size:13px}.status{font-size:20px;font-weight:700;margin:8px 0}input{width:100%;padding:13px;border-radius:10px;border:1px solid #444;background:#292d32;color:#fff;font-size:16px;margin:8px 0}button{border:0;border-radius:11px;padding:14px;color:#fff;font-weight:700;font-size:15px;background:#30353a;width:100%;margin-top:7px}.start{background:#1976d2}.stop{background:#c62828}.row{display:flex;gap:7px}.row button{flex:1}.grid,.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metric{background:#282c31;border-radius:11px;text-align:center;padding:12px}.val{font-size:24px;font-weight:700}.lab{font-size:11px;color:#999}.actions button{margin:0}.event,.item{margin-top:8px;background:#25292e;padding:10px;border-radius:10px}.item{border-top:1px solid #34383d}.badge{display:inline-block;background:#30353a;border-radius:6px;padding:4px 6px;margin:2px;font-size:11px}#map{height:310px;border-radius:12px;overflow:hidden}.hidden{display:none}.ok{color:#55d477}.err{color:#ff6b6b}
 </style></head><body><div class="wrap">
@@ -135,10 +134,3 @@ function render(){
  $("history").innerHTML=h.map((r,i)=>`<div class="item"><b>${esc(r.name)}</b><br><span class="badge">${new Date(r.start).toLocaleString("pl-PL")}</span><span class="badge">${r.distance.toFixed(2)} km</span><span class="badge">${time(r.end-r.start)}</span><br>${r.events.map(e=>`<span class="badge">${esc(e.type)} ${time(e.end-e.start)}</span>`).join("")}<button onclick="del(${i})">Usuń</button></div>`).join("")}
 function del(i){let h=JSON.parse(localStorage.getItem(KEY)||"[]");h.splice(i,1);localStorage.setItem(KEY,JSON.stringify(h));render()}
 function clearHistory(){if(confirm("Usunąć całą historię?")){localStorage.removeItem(KEY);render()}}
-function download(data,name,type){let a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
-function exportJSON(){download(localStorage.getItem(KEY)||"[]","kierowca_trasy.json","application/json")}
-function exportCSV(){let h=JSON.parse(localStorage.getItem(KEY)||"[]"),r=[["Trasa","Start","Koniec","Czas","Dystans km","Czynności"]];h.forEach(x=>r.push([x.name,new Date(x.start).toLocaleString("pl-PL"),new Date(x.end).toLocaleString("pl-PL"),time(x.end-x.start),x.distance.toFixed(2),x.events.map(e=>e.type+" "+time(e.end-e.start)).join(" | ")]));download("\ufeff"+r.map(x=>x.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n"),"kierowca_trasy.csv","text/csv;charset=utf-8")}
-init();
-</script>
-</body>
-</html>
