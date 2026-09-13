@@ -1,4 +1,3 @@
-meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Kierowca GPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -80,10 +79,4 @@ function render(){
 function del(i){let h=JSON.parse(localStorage.getItem(KEY)||"[]");h.splice(i,1);localStorage.setItem(KEY,JSON.stringify(h));render()}
 function clearHistory(){if(confirm("Usunąć całą historię?")){localStorage.removeItem(KEY);render()}}
 function download(data,name,type){let a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
-function exportJSON(){download(localStorage.getItem(KEY)||"[]","kierowca_trasy.json","application/json")}
-function exportCSV(){let h=JSON.parse(localStorage.getItem(KEY)||"[]"),r=[["Trasa","Start","Koniec","Czas","Dystans km","Czynności"]];h.forEach(x=>r.push([x.name,new Date(x.start).toLocaleString("pl-PL"),new Date(x.end).toLocaleString("pl-PL"),time(x.end-x.start),x.distance.toFixed(2),x.events.map(e=>e.type+" "+time(e.end-e.start)).join(" | ")]));download("\ufeff"+r.map(x=>x.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n"),"kierowca_trasy.csv","text/csv;charset=utf-8")}
-init();
-</script></body></html>
-
-
-
+function exportJSON(){download(localStorage.getItem(KEY)||"[]
