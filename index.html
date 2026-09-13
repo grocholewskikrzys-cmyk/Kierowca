@@ -1,124 +1,65 @@
+<!doctype html>
+<html lang="pl"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Kierowca GPS</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101214;color:#fff;font-family:Arial,sans-serif}.wrap{max-width:620px;margin:auto;padding:10px}.card{background:#1b1e22;border-radius:16px;padding:14px;margin-bottom:10px}h1{margin:0 0 5px}.muted{color:#9aa0a6;font-size:13px}.status{font-size:20px;font-weight:700;margin:8px 0}input{width:100%;padding:13px;border-radius:10px;border:1px solid #444;background:#292d32;color:#fff;font-size:16px;margin:8px 0}button{border:0;border-radius:11px;padding:14px;color:#fff;font-weight:700;font-size:15px;background:#30353a;width:100%;margin-top:7px}.start{background:#1976d2}.stop{background:#c62828}.row{display:flex;gap:7px}.row button{flex:1}.grid,.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metric{background:#282c31;border-radius:11px;text-align:center;padding:12px}.val{font-size:24px;font-weight:700}.lab{font-size:11px;color:#999}.actions button{margin:0}.event,.item{margin-top:8px;background:#25292e;padding:10px;border-radius:10px}.item{border-top:1px solid #34383d}.badge{display:inline-block;background:#30353a;border-radius:6px;padding:4px 6px;margin:2px;font-size:11px}#map{height:310px;border-radius:12px;overflow:hidden}.hidden{display:none}.ok{color:#55d477}.err{color:#ff6b6b}
+</style></head><body><div class="wrap">
+<div class="card"><h1>🚛 KIEROWCA</h1><div id="status" class="status">Gotowy do jazdy</div><div id="gps" class="muted">GPS: oczekiwanie</div><input id="route" placeholder="np. Gądek → Poznań"><div class="row"><button id="start" class="start" onclick="startRoute()">▶ START</button><button id="stop" class="stop" onclick="stopRoute()" disabled>■ STOP</button></div></div>
+<div class="card"><div class="grid">
+<div class="metric"><div id="dist" class="val">0.00</div><div class="lab">KM</div></div>
+<div class="metric"><div id="time" class="val">00:00:00</div><div class="lab">CZAS</div></div>
+<div class="metric"><div id="speed" class="val">0</div><div class="lab">KM/H</div></div>
+<div class="metric"><div id="points" class="val">0</div><div class="lab">PUNKTY GPS</div></div>
+</div></div>
+<div class="card"><div class="muted">CZYNNOŚĆ</div><div class="actions">
+<button onclick="eventStart('Załadunek')">📦 Załadunek</button><button onclick="eventStart('Rozładunek')">📤 Rozładunek</button>
+<button onclick="eventStart('Przeładunek')">🔄 Przeładunek</button><button onclick="eventStart('Tankowanie')">⛽ Tankowanie</button>
+<button onclick="eventStart('Postój')">⏸ Postój</button><button onclick="eventStart('Inne')">📝 Inne</button>
+</div><div id="current" class="event">Brak aktywnej czynności</div></div>
+<div class="card"><div class="muted">MAPA I ŚLAD GPS</div><div id="map"></div></div>
+<div class="card"><div class="muted">DZIENNIK</div><div id="log"></div></div>
+<div class="card"><div class="muted">HISTORIA TRAS</div><div id="history">Brak zapisanych tras.</div><button onclick="exportJSON()">💾 EKSPORT JSON</button><button onclick="exportCSV()">📄 EKSPORT CSV</button><button onclick="clearHistory()">🗑 WYCZYŚĆ HISTORIĘ</button></div>
+<div class="card muted">Dane są zapisane lokalnie. GPS wymaga HTTPS i zgody na lokalizację. Praca GPS po wygaszeniu ekranu zależy od przeglądarki/Androida.</div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let active=null,watchId=null,timerId=null,eventId=null,map,track;
+const $=id=>document.getElementById(id),KEY="kierowca_routes_v4";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const time=ms=>{let s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(x).padStart(2,"0")};
+const now=()=>new Date().toLocaleTimeString("pl-PL");
+function log(s){$("log").innerHTML+=`<div class="item">[${now()}] ${esc(s)}</div>`}
+function dist(a,b){const R=6371000,p=Math.PI/180,la=a.lat*p,lb=b.lat*p,dl=(b.lat-a.lat)*p,dn=(b.lon-a.lon)*p,x=Math.sin(dl/2)**2+Math.cos(la)*Math.cos(lb)*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))}
+function init(){map=L.map("map").setView([52.4,16.9],9);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);track=L.polyline([],{weight:5}).addTo(map);render()}
+function resetMap(){track.setLatLngs([]);map.setView([52.4,16.9],9)}
+function draw(){if(!active||!active.points.length)return;let p=active.points.map(x=>[x.lat,x.lon]);track.setLatLngs(p);if(p.length>1)map.fitBounds(track.getBounds(),{padding:[20,20]});else map.setView(p[0],16)}
+function update(){if(!active)return;$("dist").textContent=active.distance.toFixed(2);$("time").textContent=time(Date.now()-active.start);if(active.event)$("current").textContent=active.event.type+" • "+time(Date.now()-active.event.start)}
+function startRoute(){
+ if(active)return;if(!navigator.geolocation){alert("Brak obsługi GPS.");return}
+ active={name:$("route").value.trim()||"Trasa bez nazwy",start:Date.now(),end:null,distance:0,points:[],events:[],event:null};
+ $("route").disabled=true;$("start").disabled=true;$("stop").disabled=false;$("status").textContent="TRASA AKTYWNA";$("gps").textContent="GPS: szukanie...";$("gps").className="muted";$("log").innerHTML="";resetMap();log("Rozpoczęto: "+active.name);
+ timerId=setInterval(update,1000);
+ watchId=navigator.geolocation.watchPosition(gpsOK,gpsError,{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+}
+function gpsOK(pos){
+ if(!active)return;let a=pos.coords.accuracy||999;if(a>100){$("gps").textContent="GPS: słaba dokładność ±"+Math.round(a)+" m";return}
+ let p={lat:pos.coords.latitude,lon:pos.coords.longitude,time:pos.timestamp,speed:pos.coords.speed||0,accuracy:a},last=active.points.at(-1);
+ if(!last)active.points.push(p);else{let d=dist(last,p),dt=Math.max(1,(p.time-last.time)/1000);if(d>=5&&d/dt<=55){active.distance+=d/1000;active.points.push(p)}}
+ $("speed").textContent=Math.round(p.speed*3.6);$("points").textContent=active.points.length;$("gps").textContent="GPS: OK • ±"+Math.round(a)+" m";$("gps").className="ok";draw();update()
+}
+function gpsError(e){$("gps").textContent="GPS: "+e.message;$("gps").className="err";log("Błąd GPS: "+e.message)}
+function eventStart(type){if(!active){alert("Najpierw rozpocznij trasę.");return}if(active.event)finishEvent();active.event={type,start:Date.now()};$("status").textContent=type;$("current").textContent=type+" • 00:00:00";log("Rozpoczęto: "+type);clearInterval(eventId);eventId=setInterval(update,1000)}
+function finishEvent(){if(!active?.event)return;let e={type:active.event.type,start:active.event.start,end:Date.now()};active.events.push(e);log("Zakończono: "+e.type+" • "+time(e.end-e.start));active.event=null;clearInterval(eventId);$("current").textContent="Brak aktywnej czynności";$("status").textContent="TRASA AKTYWNA"}
+function stopRoute(){if(!active)return;if(active.event)finishEvent();active.end=Date.now();clearInterval(timerId);clearInterval(eventId);if(watchId!==null)navigator.geolocation.clearWatch(watchId);watchId=null;let h=JSON.parse(localStorage.getItem(KEY)||"[]");h.unshift(active);localStorage.setItem(KEY,JSON.stringify(h.slice(0,200)));log("Zakończono trasę • "+active.distance.toFixed(2)+" km");active=null;$("route").disabled=false;$("route").value="";$("start").disabled=false;$("stop").disabled=true;$("status").textContent="TRASA ZAPISANA";$("gps").textContent="GPS: oczekiwanie";$("gps").className="muted";$("dist").textContent="0.00";$("time").textContent="00:00:00";$("speed").textContent="0";$("points").textContent="0";$("current").textContent="Brak aktywnej czynności";resetMap();render()}
+function render(){let h=JSON.parse(localStorage.getItem(KEY)||"[]");if(!h.length){$("history").innerHTML="Brak zapisanych tras.";return}$("history").innerHTML=h.map((r,i)=>`<div class="item"><b>${esc(r.name)}</b><br><span class="badge">${new Date(r.start).toLocaleString("pl-PL")}</span><span class="badge">${r.distance.toFixed(2)} km</span><span class="badge">${time(r.end-r.start)}</span><br>${r.events.map(e=>`<span class="badge">${esc(e.type)} ${time(e.end-e.start)}</span>`).join("")}<button onclick="del(${i})">Usuń</button></div>`).join("")}
+function del(i){let h=JSON.parse(localStorage.getItem(KEY)||"[]");h.splice(i,1);localStorage.setItem(KEY,JSON.stringify(h));render()}
+function clearHistory(){if(confirm("Usunąć całą historię?")){localStorage.removeItem(KEY);render()}}
+function download(data,name,type){let a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function exportJSON(){download(localStorage.getItem(KEY)||"[]","kierowca_trasy.json","application/json")}
+function exportCSV(){let h=JSON.parse(localStorage.getItem(KEY)||"[]"),r=[["Trasa","Start","Koniec","Czas","Dystans km","Czynności"]];h.forEach(x=>r.push([x.name,new Date(x.start).toLocaleString("pl-PL"),new Date(x.end).toLocaleString("pl-PL"),time(x.end-x.start),x.distance.toFixed(2),x.events.map(e=>e.type+" "+time(e.end-e.start)).join(" | ")]));download("\ufeff"+r.map(x=>x.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n"),"kierowca_trasy.csv","text/csv;charset=utf-8")}
+init();
+</script></body></html>
 
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kierowca GPS</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container {
-            width: 100%;
-            max-width: 480px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .card {
-            background-color: #1e1e1e;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        h1 {
-            font-size: 24px;
-            color: #ffffff;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            background-color: #ff5252;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        .status-indicator.active {
-            background-color: #4CAF50;
-            box-shadow: 0 0 8px #4CAF50;
-        }
-        .route-input {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            background-color: #2c2c2c;
-            border: 1px solid #444;
-            border-radius: 8px;
-            color: #fff;
-            margin-bottom: 15px;
-        }
-        .btn-group {
-            display: flex;
-            gap: 10px;
-        }
-        .btn {
-            flex: 1;
-            padding: 14px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            text-transform: uppercase;
-            color: white;
-            transition: opacity 0.2s;
-        }
-        .btn:active {
-            opacity: 0.8;
-        }
-        .btn-start {
-            background-color: #1976D2;
-        }
-        .btn-stop {
-            background-color: #D32F2F;
-        }
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .metric-box {
-            background-color: #252525;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .metric-value {
-            font-size: 22px;
-            font-weight: bold;
-            color: #ffffff;
-            margin-top: 5px;
-        }
-        .metric-label {
-            font-size: 12px;
-            color: #aaa;
-            text-transform: uppercase;
-        }
-        .actions-section h3 {
-            font-size: 14px;
-            color: #aaa;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-        .actions-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .action-btn {
-            background-color: #2c2c2c;
