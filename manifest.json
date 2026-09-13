@@ -1,0 +1,11 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Kierowca GPS",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "grocholewskikrzys-cmyk.github",
+  "start_url": "/",
+  "theme_color": "#ffffff"
+}
