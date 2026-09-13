@@ -1,4 +1,3 @@
-html lang="pl"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Kierowca GPS</title>
@@ -48,3 +47,4 @@ function gpsOK(pos){
  let p={lat:pos.coords.latitude,lon:pos.coords.longitude,time:pos.timestamp,speed:pos.coords.speed||0,accuracy:a},last=active.points.at(-1);
  if(!last)active.points.push(p);else{let d=dist(last,p),dt=Math.max(1,(p.time-last.time)/1000);if(d>=5&&d/dt<=55){active.distance+=d/1000;active.points.push(p)}}
  $("speed").textContent=Math.round(p.speed*3.6);$("points").textConte
+
