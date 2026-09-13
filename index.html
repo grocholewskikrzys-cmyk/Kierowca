@@ -1,5 +1,4 @@
-<!doctype html>
-<html lang="pl"><head>
+html lang="pl"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Kierowca GPS</title>
@@ -48,18 +47,4 @@ function gpsOK(pos){
  if(!active)return;let a=pos.coords.accuracy||999;if(a>100){$("gps").textContent="GPS: słaba dokładność ±"+Math.round(a)+" m";return}
  let p={lat:pos.coords.latitude,lon:pos.coords.longitude,time:pos.timestamp,speed:pos.coords.speed||0,accuracy:a},last=active.points.at(-1);
  if(!last)active.points.push(p);else{let d=dist(last,p),dt=Math.max(1,(p.time-last.time)/1000);if(d>=5&&d/dt<=55){active.distance+=d/1000;active.points.push(p)}}
- $("speed").textContent=Math.round(p.speed*3.6);$("points").textContent=active.points.length;$("gps").textContent="GPS: OK • ±"+Math.round(a)+" m";$("gps").className="ok";draw();update()
-}
-function gpsError(e){$("gps").textContent="GPS: "+e.message;$("gps").className="err";log("Błąd GPS: "+e.message)}
-function eventStart(type){if(!active){alert("Najpierw rozpocznij trasę.");return}if(active.event)finishEvent();active.event={type,start:Date.now()};$("status").textContent=type;$("current").textContent=type+" • 00:00:00";log("Rozpoczęto: "+type);clearInterval(eventId);eventId=setInterval(update,1000)}
-function finishEvent(){if(!active?.event)return;let e={type:active.event.type,start:active.event.start,end:Date.now()};active.events.push(e);log("Zakończono: "+e.type+" • "+time(e.end-e.start));active.event=null;clearInterval(eventId);$("current").textContent="Brak aktywnej czynności";$("status").textContent="TRASA AKTYWNA"}
-function stopRoute(){if(!active)return;if(active.event)finishEvent();active.end=Date.now();clearInterval(timerId);clearInterval(eventId);if(watchId!==null)navigator.geolocation.clearWatch(watchId);watchId=null;let h=JSON.parse(localStorage.getItem(KEY)||"[]");h.unshift(active);localStorage.setItem(KEY,JSON.stringify(h.slice(0,200)));log("Zakończono trasę • "+active.distance.toFixed(2)+" km");active=null;$("route").disabled=false;$("route").value="";$("start").disabled=false;$("stop").disabled=true;$("status").textContent="TRASA ZAPISANA";$("gps").textContent="GPS: oczekiwanie";$("gps").className="muted";$("dist").textContent="0.00";$("time").textContent="00:00:00";$("speed").textContent="0";$("points").textContent="0";$("current").textContent="Brak aktywnej czynności";resetMap();render()}
-function render(){let h=JSON.parse(localStorage.getItem(KEY)||"[]");if(!h.length){$("history").innerHTML="Brak zapisanych tras.";return}$("history").innerHTML=h.map((r,i)=>`<div class="item"><b>${esc(r.name)}</b><br><span class="badge">${new Date(r.start).toLocaleString("pl-PL")}</span><span class="badge">${r.distance.toFixed(2)} km</span><span class="badge">${time(r.end-r.start)}</span><br>${r.events.map(e=>`<span class="badge">${esc(e.type)} ${time(e.end-e.start)}</span>`).join("")}<button onclick="del(${i})">Usuń</button></div>`).join("")}
-function del(i){let h=JSON.parse(localStorage.getItem(KEY)||"[]");h.splice(i,1);localStorage.setItem(KEY,JSON.stringify(h));render()}
-function clearHistory(){if(confirm("Usunąć całą historię?")){localStorage.removeItem(KEY);render()}}
-function download(data,name,type){let a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
-function exportJSON(){download(localStorage.getItem(KEY)||"[]","kierowca_trasy.json","application/json")}
-function exportCSV(){let h=JSON.parse(localStorage.getItem(KEY)||"[]"),r=[["Trasa","Start","Koniec","Czas","Dystans km","Czynności"]];h.forEach(x=>r.push([x.name,new Date(x.start).toLocaleString("pl-PL"),new Date(x.end).toLocaleString("pl-PL"),time(x.end-x.start),x.distance.toFixed(2),x.events.map(e=>e.type+" "+time(e.end-e.start)).join(" | ")]));download("\ufeff"+r.map(x=>x.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n"),"kierowca_trasy.csv","text/csv;charset=utf-8")}
-init();
-</script></body></html>
-
+ $("speed").textContent=Math.round(p.speed*3.6);$("points").textConte
