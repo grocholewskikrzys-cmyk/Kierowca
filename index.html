@@ -180,6 +180,7 @@
     <button class="button btn-csv" onclick="exportToCSV()">Pobierz raport CSV</button>
     <button class="button btn-clear" onclick="clearData()">Wyczyść historię i dane</button>
 </div>
+
 <script>
     let currentMode = 'Stop';
     let watchId = null;
@@ -305,26 +306,40 @@
         const odoStart = document.getElementById('odometerStart').value || "0";
         const odoEnd = document.getElementById('odometerEnd').value || "0";
         
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-        csvContent += "RAPORT PRACY KIEROWCY\n";
-        csvContent += `Data:,${dateStr}\n`;
-        csvContent += `Trasa:,${from} -> ${to}\n`;
-        csvContent += `Licznik początkowy:,${odoStart}\n`;
-        csvContent += `Licznik końcowy:,${odoEnd}\n`;
-        csvContent += `Suma km (z licznika):,${totalKm.toFixed(2)} km\n\n`;
-        csvContent += "SZCZEGÓŁOWY DZIENNIK ZDARZEŃ:\n";
-        
-        logs.forEach(function(row) {
-            csvContent += `"${row}"\n`;
-        });
+        let reportText = "RAPORT PRACY KIEROWCY\n";
+        reportText += `Data: ${dateStr}\n`;
+        reportText += `Trasa: ${from} -> ${to}\n`;
+        reportText += `Licznik początkowy: ${odoStart}\n`;
+        reportText += `Licznik końcowy: ${odoEnd}\n`;
+        reportText += `Suma km: ${totalKm.toFixed(2)} km\n\n`;
+        reportText += "DZIENNIK ZDARZEŃ:\n";
+        reportText += logs.join('\n');
 
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `raport_${dateStr.replace(/\./g, '-')}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const win = window.open('', '_blank');
+        if (win) {
+            win.document.write(`
+                <html>
+                <head>
+                    <title>Raport Pracy</title>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body { background: #121212; color: #fff; font-family: monospace; padding: 20px; }
+                        textarea { width: 100%; height: 300px; background: #1e1e1e; color: #4caf50; border: 1px solid #444; padding: 10px; font-size: 14px; border-radius: 6px; box-sizing: border-box; }
+                        button { background: #2e7d32; color: white; border: none; padding: 12px; width: 100%; font-size: 16px; border-radius: 6px; margin-top: 15px; font-weight: bold; cursor: pointer; }
+                    </style>
+                </head>
+                <body>
+                    <h3>Twój Raport Pracy</h3>
+                    <p style="font-size: 12px; color: #aaa;">Skopiuj tekst raportu poniżej:</p>
+                    <textarea readonly>${reportText}</textarea>
+                    <button onclick="navigator.clipboard.writeText(document.querySelector('textarea').value); alert('Skopiowano raport do schowka!');">Skopiuj do schowka</button>
+                </body>
+                </html>
+            `);
+        } else {
+            alert("Przeglądarka zablokowała otwarcie okna raportu. Zezwalaj na wyskakujące okienka dla tej strony.");
+        }
     }
 
     function startGpsTracking() {
