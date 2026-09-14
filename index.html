@@ -1,4 +1,263 @@
-saveState();
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rejestrator Pracy Kierowcy Pro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 15px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        h2 {
+            text-align: center;
+            color: #ffffff;
+            margin-top: 0;
+        }
+        .status-box {
+            background: #2c2c2c;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #b0b0b0;
+            margin-bottom: 3px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            background: #2c2c2c;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .stat-card {
+            background: #252525;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4caf50;
+            margin-top: 5px;
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+        }
+        .btn-start { background-color: #2e7d32; grid-column: span 2; }
+        .btn-action { background-color: #f57c00; }
+        .btn-manual-resume { background-color: #1976d2; grid-column: span 2; display: none; }
+        .btn-stop { background-color: #c62828; grid-column: span 2; }
+        
+        #gps-status {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+        #log {
+            margin-top: 15px;
+            background: #121212;
+            padding: 10px;
+            border-radius: 6px;
+            max-height: 130px;
+            overflow-y: auto;
+            font-size: 13px;
+            border: 1px solid #333;
+        }
+        .btn-csv {
+            background-color: #0277bd;
+            font-size: 14px;
+            padding: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-clear {
+            background-color: #424242;
+            font-size: 12px;
+            padding: 6px;
+            margin-top: 8px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Kierowca App Pro</h2>
+    
+    <div class="status-box">
+        Stan: <span id="currentStatus" style="font-weight: bold; color: #ffb74d;">Stop</span>
+        <div id="gps-status">GPS: Gotowy</div>
+    </div>
+
+    <div class="input-group">
+        <label>Skąd (Załadunek / Punkt początkowy):</label>
+        <input type="text" id="routeFrom" placeholder="np. Poznań">
+    </div>
+    <div class="input-group">
+        <label>Dokąd (Rozładunek / Punkt docelowy):</label>
+        <input type="text" id="routeTo" placeholder="np. Berlin">
+    </div>
+
+    <div class="stats-grid">
+        <div class="input-group" style="margin-bottom:0;">
+            <label>Liczn. Początkowy (km):</label>
+            <input type="number" id="odometerStart" placeholder="np. 150000" oninput="calculateOdometer()">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+            <label>Liczn. Końcowy (km):</label>
+            <input type="number" id="odometerEnd" placeholder="np. 150350" oninput="calculateOdometer()">
+        </div>
+    </div>
+
+    <div class="stats-grid" style="margin-top: 10px;">
+        <div class="stat-card">
+            <div>Przejechane km (z licznika)</div>
+            <div class="stat-value" id="totalDistance">0.00 km</div>
+        </div>
+        <div class="stat-card">
+            <div>Prędkość (GPS)</div>
+            <div class="stat-value" id="currentSpeed">0 km/h</div>
+        </div>
+    </div>
+
+    <div class="btn-grid">
+        <button class="btn-start" onclick="startRoute()">Start Trasy</button>
+        
+        <button class="btn-action" onclick="setActivity('Tankowanie')">Tankowanie</button>
+        <button class="btn-action" onclick="setActivity('Załadunek')">Załadunek</button>
+        <button class="btn-action" onclick="setActivity('Rozładunek')">Rozładunek</button>
+        <button class="btn-action" onclick="setActivity('Pauza')">Pauza</button>
+        
+        <button id="manualResume" class="btn-manual-resume" onclick="setActivity('Trasa (Wznowiona ręcznie)')">Wróć do Trasy ręcznie</button>
+    </div>
+
+    <button class="btn-stop" onclick="stopWork()">Zakończ Pracę</button>
+
+    <h3>Dziennik zdarzeń i trasa:</h3>
+    <div id="log"></div>
+    
+    <button class="button btn-csv" onclick="exportToCSV()">Pobierz raport CSV</button>
+    <button class="button btn-clear" onclick="clearData()">Wyczyść historię i dane</button>
+</div>
+
+<script>
+    let currentMode = 'Stop';
+    let watchId = null;
+    let totalKm = 0;
+    let logs = [];
+
+    window.onload = function() {
+        if(localStorage.getItem('driver_km')) {
+            totalKm = parseFloat(localStorage.getItem('driver_km'));
+            document.getElementById('totalDistance').innerText = totalKm.toFixed(2) + ' km';
+        }
+        if(localStorage.getItem('driver_logs')) {
+            logs = JSON.parse(localStorage.getItem('driver_logs'));
+            renderLogs();
+        }
+        if(localStorage.getItem('driver_status')) {
+            currentMode = localStorage.getItem('driver_status');
+            document.getElementById('currentStatus').innerText = currentMode;
+        }
+        if(localStorage.getItem('route_from')) document.getElementById('routeFrom').value = localStorage.getItem('route_from');
+        if(localStorage.getItem('route_to')) document.getElementById('routeTo').value = localStorage.getItem('route_to');
+        if(localStorage.getItem('odometer_start')) document.getElementById('odometerStart').value = localStorage.getItem('odometer_start');
+        if(localStorage.getItem('odometer_end')) document.getElementById('odometerEnd').value = localStorage.getItem('odometer_end');
+
+        if(currentMode !== 'Stop' && !currentMode.includes('Koniec')) {
+            startGpsTracking();
+        }
+    };
+
+    function calculateOdometer() {
+        const start = parseFloat(document.getElementById('odometerStart').value) || 0;
+        const end = parseFloat(document.getElementById('odometerEnd').value) || 0;
+        
+        if (end >= start) {
+            totalKm = end - start;
+            document.getElementById('totalDistance').innerText = totalKm.toFixed(2) + ' km';
+            saveState();
+        }
+    }
+
+    function startRoute() {
+        const from = document.getElementById('routeFrom').value;
+        const to = document.getElementById('routeTo').value;
+        if(!from || !to) {
+            alert("Wpisz punkty Skąd i Dokąd przed rozpoczęciem trasy!");
+            return;
+        }
+        setActivity('Rozpoczęcie Trasy (Jazda): ' + from + ' -> ' + to);
+    }
+
+    function setActivity(statusName) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        
+        currentMode = statusName;
+        document.getElementById('currentStatus').innerText = statusName;
+        
+        const manualResumeBtn = document.getElementById('manualResume');
+        const isRestState = ['Tankowanie', 'Załadunek', 'Rozładunek', 'Pauza'].includes(statusName);
+        
+        if (isRestState) {
+            manualResumeBtn.style.display = 'block';
+            document.getElementById('gps-status').innerText = "GPS: Postój (oczekiwanie na ruch)...";
+        } else {
+            manualResumeBtn.style.display = 'none';
+            document.getElementById('gps-status').innerText = "GPS: Śledzenie prędkości aktywne";
+            startGpsTracking();
+        }
+
+        addLog(`[${timeString}] ${statusName}`);
+        saveState();
+    }
+
+    function stopWork() {
+        setActivity('Koniec Pracy');
+        stopGpsTracking();
+        document.getElementById('currentSpeed').innerText = "0 km/h";
     }
 
     function addLog(text) {
@@ -13,11 +272,14 @@ saveState();
         logEl.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
         logEl.scrollTop = logEl.scrollHeight;
     }
-
     function saveState() {
         localStorage.setItem('driver_km', totalKm);
         localStorage.setItem('driver_logs', JSON.stringify(logs));
         localStorage.setItem('driver_status', currentMode);
+        localStorage.setItem('route_from', document.getElementById('routeFrom').value);
+        localStorage.setItem('route_to', document.getElementById('routeTo').value);
+        localStorage.setItem('odometer_start', document.getElementById('odometerStart').value);
+        localStorage.setItem('odometer_end', document.getElementById('odometerEnd').value);
     }
 
     function clearData() {
@@ -27,46 +289,54 @@ saveState();
             logs = [];
             document.getElementById('totalDistance').innerText = "0.00 km";
             document.getElementById('currentSpeed').innerText = "0 km/h";
+            document.getElementById('routeFrom').value = "";
+            document.getElementById('routeTo').value = "";
+            document.getElementById('odometerStart').value = "";
+            document.getElementById('odometerEnd').value = "";
             document.getElementById('log').innerHTML = "";
             setActivity('Stop');
         }
+    }
+
+    function exportToCSV() {
+        const dateStr = new Date().toLocaleDateString();
+        const from = document.getElementById('routeFrom').value || "Brak";
+        const to = document.getElementById('routeTo').value || "Brak";
+        const odoStart = document.getElementById('odometerStart').value || "0";
+        const odoEnd = document.getElementById('odometerEnd').value || "0";
+        
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+        csvContent += "RAPORT PRACY KIEROWCY\n";
+        csvContent += `Data:,${dateStr}\n`;
+        csvContent += `Trasa:,${from} -> ${to}\n`;
+        csvContent += `Licznik początkowy:,${odoStart}\n`;
+        csvContent += `Licznik końcowy:,${odoEnd}\n`;
+        csvContent += `Suma km (z licznika):,${totalKm.toFixed(2)} km\n\n`;
+        csvContent += "SZCZEGÓŁOWY DZIENNIK ZDARZEŃ:\n";
+        
+        logs.forEach(function(row) {
+            csvContent += `"${row}"\n`;
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `raport_${dateStr.replace(/\./g, '-')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     function startGpsTracking() {
         if (navigator.geolocation && !watchId) {
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const accuracy = position.coords.accuracy;
                     const speedMs = position.coords.speed;
+                    const accuracy = position.coords.accuracy;
                     
                     const speedKmh = speedMs !== null && speedMs >= 0 ? Math.round(speedMs * 3.6) : 0;
                     document.getElementById('currentSpeed').innerText = speedKmh + " km/h";
                     document.getElementById('gps-status').innerText = `GPS: Dokładność ~${Math.round(accuracy)}m`;
-
-                    if (accuracy > 30) return;
-
-                    const isRestState = ['Tankowanie', 'Załadunek', 'Rozładunek', 'Pauza'].includes(currentMode);
-
-                    if (lastLat !== null && lastLon !== null) {
-                        const distanceMeters = getDistanceFromLatLonInMeters(lastLat, lastLon, lat, lon);
-                        
-                        if (distanceMeters > 4) {
-                            if (!isRestState && currentMode !== 'Stop') {
-                                totalKm += distanceMeters / 1000;
-                                document.getElementById('totalDistance').innerText = totalKm.toFixed(2) + ' km';
-                                saveState();
-                            }
-
-                            if (isRestState && distanceMeters > 40) {
-                                setActivity('Trasa (Wznowiona automatycznie po ruszeniu)');
-                            }
-                        }
-                    }
-                    
-                    lastLat = lat;
-                    lastLon = lon;
                 },
                 (error) => {
                     document.getElementById('gps-status').innerText = "Błąd GPS: " + error.message;
@@ -81,17 +351,8 @@ saveState();
             navigator.geolocation.clearWatch(watchId);
             watchId = null;
         }
-        lastLat = null;
-        lastLon = null;
     }
+</script>
 
-    function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const dLat = deg2rad(lat2 - lat1);
-        const dLon = deg2rad(lon2 - lon1);
-        const a = 
-            Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
+</body>
+</html>
