@@ -8,7 +8,6 @@
     <style>
         :root {
             --bg-color: #121212;
-            --card-bg: #1e1e1e;
             --box-bg: #222222;
             --text-main: #ffffff;
             --text-muted: #888888;
@@ -30,11 +29,7 @@
             justify-content: center;
         }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
-        }
-
+        .container { width: 100%; max-width: 500px; }
         h2 { text-align: center; margin: 10px 0 20px 0; font-size: 22px; }
 
         .status-card {
@@ -116,6 +111,40 @@
         }
         .log-entry { margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 4px; }
         .log-time { color: var(--text-main); font-weight: bold; margin-right: 5px; }
+
+        /* Modal do raportu */
+        #reportModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .modal-content {
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .modal-content textarea {
+            width: 100%;
+            height: 150px;
+            background: #121212;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 13px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -189,13 +218,22 @@
     <button class="btn btn-stop" onclick="finishWork()">Zakończ Pracę</button>
 
     <div class="section-title">DZIENNIK ZDARZEŃ</div>
-    <div class="log-box" id="logContent">
-        Brak zdarzeń
-    </div>
+    <div class="log-box" id="logContent">Brak zdarzeń</div>
 
-    <button class="btn btn-csv" onclick="downloadCSV()">Pobierz raport CSV</button>
+    <button class="btn btn-csv" onclick="showReport()">Pobierz raport CSV (Tekst)</button>
     <button class="btn btn-json" onclick="downloadJSON()">Zapisz kopię zapasową (JSON)</button>
     <button class="btn btn-clear" onclick="clearData()">Wyczyść historię i dane</button>
+</div>
+
+<!-- Modal na raport -->
+<div id="reportModal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color:#4caf50;">Raport z trasy (CSV)</h3>
+        <p style="font-size:12px; color:#aaa; margin-bottom:10px;">Skopiuj poniższy tekst lub udostępnij go spedytorowi:</p>
+        <textarea id="reportText" readonly></textarea>
+        <button class="btn btn-start" onclick="copyReport()">Skopiuj do schowka</button>
+        <button class="btn btn-stop" onclick="closeModal()" style="margin-top:5px;">Zamknij</button>
+    </div>
 </div>
 
 <script>
@@ -322,44 +360,47 @@
     function finishWork() {
         if (isRunning) toggleRoute();
         logEvent("Zakończenie pracy");
-        alert("Zakończono pracę! Możesz teraz pobrać raport CSV.");
+        showReport();
     }
 
-    // Prawdziwy eksport CSV
-    function downloadCSV() {
-        let csvContent = "\uFEFFRaport z trasy - Kierowca App Pro\n";
+    function showReport() {
+        let csvContent = "Raport z trasy - Kierowca App Pro\n";
         const startPlace = document.getElementById('startPlace').value || "Brak";
         const endPlace = document.getElementById('endPlace').value || "Brak";
         const startOdo = document.getElementById('startOdo').value || "0";
         const endOdo = document.getElementById('endOdo').value || "0";
         const gpsKm = totalGpsDistance.toFixed(2);
 
-        csvContent += `Skąd;,${startPlace}\n`;
-        csvContent += `Dokąd;,${endPlace}\n`;
-        csvContent += `Licznik początkowy (km);,${startOdo}\n`;
-        csvContent += `Licznik końcowy (km);,${endOdo}\n`;
-        csvContent += `Dystans GPS (km);,${gpsKm}\n\n`;
-        csvContent += `Czas,Zdarzenie\n`;
+        csvContent += `Skąd: ${startPlace}\n`;
+        csvContent += `Dokąd: ${endPlace}\n`;
+        csvContent += `Licznik początkowy: ${startOdo} km\n`;
+        csvContent += `Licznik końcowy: ${endOdo} km\n`;
+        csvContent += `Dystans GPS: ${gpsKm} km\n\n`;
+        csvContent += `--- ZDARZENIA ---\n`;
 
         if (events.length === 0) {
             csvContent += `Brak zarejestrowanych zdarzeń\n`;
         } else {
             events.forEach(e => {
-                csvContent += `${e.time},"${e.type}"\n`;
+                csvContent += `[${e.time}] ${e.type}\n`;
             });
         }
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `raport_trasy_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        document.getElementById('reportText').value = csvContent;
+        document.getElementById('reportModal').style.display = 'flex';
     }
 
-    // Prawdziwy eksport JSON
+    function copyReport() {
+        const textarea = document.getElementById('reportText');
+        textarea.select();
+        document.execCommand('copy');
+        alert("Skopiowano raport do schowka! Możesz go wkleić gdzie chcesz.");
+    }
+
+    function closeModal() {
+        document.getElementById('reportModal').style.display = 'none';
+    }
+
     function downloadJSON() {
         const data = {
             startPlace: document.getElementById('startPlace').value,
@@ -370,14 +411,13 @@
             events: events,
             exportDate: new Date().toISOString()
         };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `kopia_zapasowa_${new Date().toISOString().slice(0,10)}.json`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", "kopia_zapasowa.json");
+        document.body.appendChild(dlAnchorElem);
+        dlAnchorElem.click();
+        dlAnchorElem.remove();
     }
 
     function saveData() {
