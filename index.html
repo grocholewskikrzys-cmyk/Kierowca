@@ -3,121 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rejestrator Pracy Kierowcy Pro</title>
+    <title>Kierowca App Pro</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #121212;
-            color: #e0e0e0;
+            color: #ffffff;
             margin: 0;
             padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .container {
-            max-width: 500px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 400px;
             background: #1e1e1e;
             padding: 15px;
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        h2 {
-            text-align: center;
-            color: #ffffff;
-            margin-top: 0;
-        }
+        h2 { text-align: center; margin-bottom: 15px; color: #ffffff; }
         .status-box {
-            background: #2c2c2c;
-            padding: 12px;
+            background: #2a2a2a;
+            padding: 10px;
             border-radius: 8px;
-            margin-bottom: 15px;
             text-align: center;
+            margin-bottom: 15px;
+            font-size: 16px;
         }
-        .input-group {
-            margin-bottom: 10px;
-        }
-        .input-group label {
-            display: block;
-            font-size: 12px;
-            color: #b0b0b0;
-            margin-bottom: 3px;
-        }
-        .input-group input {
+        .status-box span { font-weight: bold; color: #ffa726; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; margin-bottom: 4px; color: #b0b0b0; }
+        input {
             width: 100%;
             padding: 10px;
             background: #2c2c2c;
             border: 1px solid #444;
             border-radius: 6px;
-            color: white;
-            font-size: 14px;
+            color: #fff;
             box-sizing: border-box;
+            font-size: 14px;
         }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .stat-card {
-            background: #252525;
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .metric-box {
+            background: #2a2a2a;
             padding: 10px;
             border-radius: 8px;
             text-align: center;
+            margin-bottom: 12px;
         }
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #4caf50;
-            margin-top: 5px;
-        }
-        .btn-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        button {
+        .metric-box .val { font-size: 18px; font-weight: bold; color: #66bb6a; }
+        .btn {
+            width: 100%;
             padding: 12px;
-            font-size: 15px;
-            font-weight: bold;
             border: none;
             border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
+            margin-bottom: 10px;
             color: white;
         }
-        .btn-start { background-color: #2e7d32; grid-column: span 2; }
+        .btn-start { background-color: #388e3c; }
         .btn-action { background-color: #f57c00; }
-        .btn-manual-resume { background-color: #1976d2; grid-column: span 2; display: none; }
-        .btn-stop { background-color: #c62828; grid-column: span 2; }
-        
-        #gps-status {
-            font-size: 11px;
-            color: #888;
-            margin-top: 5px;
-        }
-        #log {
-            margin-top: 15px;
-            background: #121212;
-            padding: 10px;
-            border-radius: 6px;
-            max-height: 130px;
-            overflow-y: auto;
-            font-size: 13px;
-            border: 1px solid #333;
-        }
-        .btn-csv {
-            background-color: #0277bd;
-            font-size: 14px;
-            padding: 10px;
-            width: 100%;
-            margin-top: 10px;
-        }
-        .btn-clear {
-            background-color: #424242;
-            font-size: 12px;
-            padding: 6px;
-            margin-top: 8px;
-            width: 100%;
-        }
+        .btn-stop { background-color: #d32f2f; }
+        .grid-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .log-section { margin-top: 15px; font-size: 13px; color: #ccc; }
     </style>
 </head>
 <body>
@@ -126,246 +79,115 @@
     <h2>Kierowca App Pro</h2>
     
     <div class="status-box">
-        Stan: <span id="currentStatus" style="font-weight: bold; color: #ffb74d;">Stop</span>
-        <div id="gps-status">GPS: Gotowy</div>
+        Stan: <span id="appStatus">Stop</span><br>
+        <small id="gpsStatus">GPS: Oczekiwanie...</small>
     </div>
 
     <div class="input-group">
         <label>Skąd (Załadunek / Punkt początkowy):</label>
-        <input type="text" id="routeFrom" placeholder="np. Poznań">
+        <input type="text" id="startPlace" placeholder="np. Poznań">
     </div>
+
     <div class="input-group">
         <label>Dokąd (Rozładunek / Punkt docelowy):</label>
-        <input type="text" id="routeTo" placeholder="np. Berlin">
+        <input type="text" id="endPlace" placeholder="np. Berlin">
     </div>
 
-    <div class="stats-grid">
-        <div class="input-group" style="margin-bottom:0;">
+    <div class="grid-2">
+        <div class="input-group">
             <label>Liczn. Początkowy (km):</label>
-            <input type="number" id="odometerStart" placeholder="np. 150000" oninput="calculateOdometer()">
+            <input type="number" id="startOdo" placeholder="np. 150000">
         </div>
-        <div class="input-group" style="margin-bottom:0;">
+        <div class="input-group">
             <label>Liczn. Końcowy (km):</label>
-            <input type="number" id="odometerEnd" placeholder="np. 150350" oninput="calculateOdometer()">
+            <input type="number" id="endOdo" placeholder="np. 150350">
         </div>
     </div>
 
-    <div class="stats-grid" style="margin-top: 10px;">
-        <div class="stat-card">
-            <div>Przejechane km (z licznika)</div>
-            <div class="stat-value" id="totalDistance">0.00 km</div>
+    <div class="grid-2">
+        <div class="metric-box">
+            <label>Przejechane km (z licznika)</label>
+            <div class="val" id="calcKm">0.00 km</div>
         </div>
-        <div class="stat-card">
-            <div>Prędkość (GPS)</div>
-            <div class="stat-value" id="currentSpeed">0 km/h</div>
+        <div class="metric-box">
+            <label>Prędkość (GPS)</label>
+            <div class="val" id="gpsSpeed" style="color: #4fc3f7;">0 km/h</div>
         </div>
     </div>
 
-    <div class="btn-grid">
-        <button class="btn-start" onclick="startRoute()">Start Trasy</button>
-        
-        <button class="btn-action" onclick="setActivity('Tankowanie')">Tankowanie</button>
-        <button class="btn-action" onclick="setActivity('Załadunek')">Załadunek</button>
-        <button class="btn-action" onclick="setActivity('Rozładunek')">Rozładunek</button>
-        <button class="btn-action" onclick="setActivity('Pauza')">Pauza</button>
-        
-        <button id="manualResume" class="btn-manual-resume" onclick="setActivity('Trasa (Wznowiona ręcznie)')">Wróć do Trasy ręcznie</button>
+    <button class="btn btn-start" id="mainBtn" onclick="toggleRoute()">Start Trasy</button>
+
+    <div class="grid-actions">
+        <button class="btn btn-action" onclick="logEvent('Tankowanie')">Tankowanie</button>
+        <button class="btn btn-action" onclick="logEvent('Załadunek')">Załadunek</button>
+        <button class="btn btn-action" onclick="logEvent('Rozładunek')">Rozładunek</button>
+        <button class="btn btn-action" onclick="logEvent('Pauza')">Pauza</button>
     </div>
 
-    <button class="btn-stop" onclick="stopWork()">Zakończ Pracę</button>
+    <button class="btn btn-stop" onclick="finishWork()">Zakończ Pracę</button>
 
-    <h3>Dziennik zdarzeń i trasa:</h3>
-    <div id="log"></div>
-    
-    <button class="button btn-csv" onclick="exportToCSV()">Pobierz raport CSV</button>
-    <button class="button btn-clear" onclick="clearData()">Wyczyść historię i dane</button>
+    <div class="log-section">
+        <strong>Dziennik zdarzeń i trasa:</strong>
+        <div id="logContent" style="margin-top: 5px; max-height: 100px; overflow-y: auto; background: #121212; padding: 8px; border-radius: 6px;"></div>
+    </div>
 </div>
 
 <script>
-    let currentMode = 'Stop';
+    let isRunning = false;
     let watchId = null;
-    let totalKm = 0;
-    let logs = [];
 
-    window.onload = function() {
-        if(localStorage.getItem('driver_km')) {
-            totalKm = parseFloat(localStorage.getItem('driver_km'));
-            document.getElementById('totalDistance').innerText = totalKm.toFixed(2) + ' km';
-        }
-        if(localStorage.getItem('driver_logs')) {
-            logs = JSON.parse(localStorage.getItem('driver_logs'));
-            renderLogs();
-        }
-        if(localStorage.getItem('driver_status')) {
-            currentMode = localStorage.getItem('driver_status');
-            document.getElementById('currentStatus').innerText = currentMode;
-        }
-        if(localStorage.getItem('route_from')) document.getElementById('routeFrom').value = localStorage.getItem('route_from');
-        if(localStorage.getItem('route_to')) document.getElementById('routeTo').value = localStorage.getItem('route_to');
-        if(localStorage.getItem('odometer_start')) document.getElementById('odometerStart').value = localStorage.getItem('odometer_start');
-        if(localStorage.getItem('odometer_end')) document.getElementById('odometerEnd').value = localStorage.getItem('odometer_end');
-
-        if(currentMode !== 'Stop' && !currentMode.includes('Koniec')) {
-            startGpsTracking();
-        }
-    };
-
-    function calculateOdometer() {
-        const start = parseFloat(document.getElementById('odometerStart').value) || 0;
-        const end = parseFloat(document.getElementById('odometerEnd').value) || 0;
+    function toggleRoute() {
+        isRunning = !isRunning;
+        const btn = document.getElementById('mainBtn');
+        const status = document.getElementById('appStatus');
         
-        if (end >= start) {
-            totalKm = end - start;
-            document.getElementById('totalDistance').innerText = totalKm.toFixed(2) + ' km';
-            saveState();
-        }
-    }
-
-    function startRoute() {
-        const from = document.getElementById('routeFrom').value;
-        const to = document.getElementById('routeTo').value;
-        if(!from || !to) {
-            alert("Wpisz punkty Skąd i Dokąd przed rozpoczęciem trasy!");
-            return;
-        }
-        setActivity('Rozpoczęcie Trasy (Jazda): ' + from + ' -> ' + to);
-    }
-
-    function setActivity(statusName) {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString();
-        
-        currentMode = statusName;
-        document.getElementById('currentStatus').innerText = statusName;
-        
-        const manualResumeBtn = document.getElementById('manualResume');
-        const isRestState = ['Tankowanie', 'Załadunek', 'Rozładunek', 'Pauza'].includes(statusName);
-        
-        if (isRestState) {
-            manualResumeBtn.style.display = 'block';
-            document.getElementById('gps-status').innerText = "GPS: Postój (oczekiwanie na ruch)...";
+        if (isRunning) {
+            btn.textContent = "Zatrzymaj Trasę";
+            btn.style.backgroundColor = "#d32f2f";
+            status.textContent = "W trasie";
+            startGPS();
         } else {
-            manualResumeBtn.style.display = 'none';
-            document.getElementById('gps-status').innerText = "GPS: Śledzenie prędkości aktywne";
-            startGpsTracking();
-        }
-
-        addLog(`[${timeString}] ${statusName}`);
-        saveState();
-    }
-
-    function stopWork() {
-        setActivity('Koniec Pracy');
-        stopGpsTracking();
-        document.getElementById('currentSpeed').innerText = "0 km/h";
-    }
-
-    function addLog(text) {
-        logs.push(text);
-        if(logs.length > 100) logs.shift();
-        renderLogs();
-        saveState();
-    }
-
-    function renderLogs() {
-        const logEl = document.getElementById('log');
-        logEl.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
-        logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    function saveState() {
-        localStorage.setItem('driver_km', totalKm);
-        localStorage.setItem('driver_logs', JSON.stringify(logs));
-        localStorage.setItem('driver_status', currentMode);
-        localStorage.setItem('route_from', document.getElementById('routeFrom').value);
-        localStorage.setItem('route_to', document.getElementById('routeTo').value);
-        localStorage.setItem('odometer_start', document.getElementById('odometerStart').value);
-        localStorage.setItem('odometer_end', document.getElementById('odometerEnd').value);
-    }
-
-    function clearData() {
-        if(confirm("Czy na pewno chcesz wyczyścić zapisane dane i kilometry?")) {
-            localStorage.clear();
-            totalKm = 0;
-            logs = [];
-            document.getElementById('totalDistance').innerText = "0.00 km";
-            document.getElementById('currentSpeed').innerText = "0 km/h";
-            document.getElementById('routeFrom').value = "";
-            document.getElementById('routeTo').value = "";
-            document.getElementById('odometerStart').value = "";
-            document.getElementById('odometerEnd').value = "";
-            document.getElementById('log').innerHTML = "";
-            setActivity('Stop');
+            btn.textContent = "Start Trasy";
+            btn.style.backgroundColor = "#388e3c";
+            status.textContent = "Stop";
+            stopGPS();
         }
     }
 
-    function exportToCSV() {
-        const dateStr = new Date().toLocaleDateString();
-        const from = document.getElementById('routeFrom').value || "Brak";
-        const to = document.getElementById('routeTo').value || "Brak";
-        const odoStart = document.getElementById('odometerStart').value || "0";
-        const odoEnd = document.getElementById('odometerEnd').value || "0";
-        
-        let reportText = "RAPORT PRACY KIEROWCY\n";
-        reportText += `Data: ${dateStr}\n`;
-        reportText += `Trasa: ${from} -> ${to}\n`;
-        reportText += `Licznik początkowy: ${odoStart}\n`;
-        reportText += `Licznik końcowy: ${odoEnd}\n`;
-        reportText += `Suma km: ${totalKm.toFixed(2)} km\n\n`;
-        reportText += "DZIENNIK ZDARZEŃ:\n";
-        reportText += logs.join('\n');
-
-        const win = window.open('', '_blank');
-        if (win) {
-            win.document.write(`
-                <html>
-                <head>
-                    <title>Raport Pracy</title>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <style>
-                        body { background: #121212; color: #fff; font-family: monospace; padding: 20px; }
-                        textarea { width: 100%; height: 300px; background: #1e1e1e; color: #4caf50; border: 1px solid #444; padding: 10px; font-size: 14px; border-radius: 6px; box-sizing: border-box; }
-                        button { background: #2e7d32; color: white; border: none; padding: 12px; width: 100%; font-size: 16px; border-radius: 6px; margin-top: 15px; font-weight: bold; cursor: pointer; }
-                    </style>
-                </head>
-                <body>
-                    <h3>Twój Raport Pracy</h3>
-                    <p style="font-size: 12px; color: #aaa;">Skopiuj tekst raportu poniżej:</p>
-                    <textarea readonly>${reportText}</textarea>
-                    <button onclick="navigator.clipboard.writeText(document.querySelector('textarea').value); alert('Skopiowano raport do schowka!');">Skopiuj do schowka</button>
-                </body>
-                </html>
-            `);
+    function startGPS() {
+        if ("geolocation" in navigator) {
+            document.getElementById('gpsStatus').textContent = "GPS: Aktywny";
+            watchId = navigator.geolocation.watchPosition(position => {
+                const speedMs = position.coords.speed;
+                const speedKmh = speedMs ? (speedMs * 3.6).toFixed(0) : 0;
+                document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
+            }, error => {
+                document.getElementById('gpsStatus').textContent = "GPS: Błąd sygnału";
+            }, { enableHighAccuracy: true });
         } else {
-            alert("Przeglądarka zablokowała otwarcie okna raportu. Zezwalaj na wyskakujące okienka dla tej strony.");
+            document.getElementById('gpsStatus').textContent = "GPS: Niedostępny";
         }
     }
 
-    function startGpsTracking() {
-        if (navigator.geolocation && !watchId) {
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const speedMs = position.coords.speed;
-                    const accuracy = position.coords.accuracy;
-                    
-                    const speedKmh = speedMs !== null && speedMs >= 0 ? Math.round(speedMs * 3.6) : 0;
-                    document.getElementById('currentSpeed').innerText = speedKmh + " km/h";
-                    document.getElementById('gps-status').innerText = `GPS: Dokładność ~${Math.round(accuracy)}m`;
-                },
-                (error) => {
-                    document.getElementById('gps-status').innerText = "Błąd GPS: " + error.message;
-                },
-                { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
-            );
-        }
-    }
-
-    function stopGpsTracking() {
+    function stopGPS() {
         if (watchId !== null) {
             navigator.geolocation.clearWatch(watchId);
             watchId = null;
         }
+        document.getElementById('gpsSpeed').textContent = "0 km/h";
+        document.getElementById('gpsStatus').textContent = "GPS: Gotowy";
+    }
+
+    function logEvent(type) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const logContent = document.getElementById('logContent');
+        logContent.innerHTML += `<div>[${time}] ${type}</div>`;
+        logContent.scrollTop = logContent.scrollHeight;
+    }
+
+    function finishWork() {
+        if (isRunning) toggleRoute();
+        alert("Zapisano raport końcowy!");
     }
 </script>
 
