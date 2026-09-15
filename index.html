@@ -1,3 +1,101 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kierowca App Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --box-bg: #222222;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent-orange: #ff9800;
+            --accent-green: #4caf50;
+            --accent-blue: #2196f3;
+            --accent-red: #f44336;
+            --accent-purple: #9c27b0;
+            --border-color: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container { width: 100%; max-width: 500px; }
+        h2 { text-align: center; margin: 10px 0 20px 0; font-size: 22px; }
+
+        .status-card {
+            background: var(--box-bg);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .status-card .state { font-size: 16px; margin-bottom: 5px; }
+        .status-card .state span { color: var(--accent-orange); font-weight: bold; }
+        .status-card .gps { font-size: 12px; color: var(--text-muted); }
+
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin: 15px 0 5px 5px;
+        }
+
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; margin-left: 5px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        input::placeholder { color: #555; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+        .metric-box {
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 5px;
+            text-align: center;
+        }
+        .metric-box label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
+        .metric-box .val { font-size: 16px; font-weight: bold; }
+        .val-green { color: var(--accent-green); }
+        .val-blue { color: var(--accent-blue); }
+        .val-orange { color: var(--accent-orange); }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .btn-start { background-color: var(--accent-green); margin-top: 10px; }
+        .btn-action { background-color: var(--accent-orange); }
+        .btn-stop { background-color: var(--accent-red); margin-top: 5px; }
+        .btn-csv { background-color: #0277bd; }
         .btn-json { background-color: var(--accent-purple); }
         .btn-clear { background-color: #424242; color: #ccc; }
 
@@ -99,7 +197,6 @@
     let watchId = null;
     let totalGpsDistance = 0;
     let lastPosition = null;
-    
     let totalDriveSeconds = 0;
     let continuousSeconds = 0;
     let dailySeconds = 0;
@@ -198,7 +295,7 @@
                     }
                 }
                 lastPosition = position;
-            }, error => {
+            }, () => {
                 document.getElementById('gpsStatus').textContent = "GPS: Błąd/Brak sygnału";
             }, { enableHighAccuracy: true, maximumAge: 0 });
         }
@@ -214,7 +311,6 @@
     function logEvent(type) {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        // Jeśli kliknięto pauzę, zerujemy czas ciągłej jazdy!
         if (type === 'Pauza') {
             continuousSeconds = 0;
             displayTime('continuousTime', continuousSeconds);
@@ -223,8 +319,7 @@
         const logContent = document.getElementById('logContent');
         if (events.length === 0) logContent.innerHTML = '';
         
-        const entry = `<div class="log-entry"><span class="log-time">[${time}]</span> ${type}</div>`;
-        logContent.innerHTML += entry;
+        logContent.innerHTML += `<div class="log-entry"><span class="log-time">[${time}]</span> ${type}</div>`;
         logContent.scrollTop = logContent.scrollHeight;
         
         events.push({ time, type });
