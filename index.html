@@ -194,7 +194,7 @@
 
 <script>
     let isRunning = false;
-    let currentMode = 'Stop'; // 'Jazda', 'Tankowanie', 'Załadunek', 'Rozładunek', 'Pauza'
+    let currentMode = 'Stop'; 
     let watchId = null;
     let totalGpsDistance = 0;
     let lastPosition = null;
@@ -234,7 +234,7 @@
             status.textContent = "W trasie (Jazda)";
             status.style.color = "#4caf50";
             currentMode = 'Jazda';
-            timerInterval = setInterval(updateTimers, 1000);
+            if(!timerInterval) timerInterval = setInterval(updateTimers, 1000);
             startGPS();
             logEvent("Start trasy");
         } else {
@@ -244,6 +244,7 @@
             status.style.color = "#ff9800";
             currentMode = 'Stop';
             clearInterval(timerInterval);
+            timerInterval = null;
             stopGPS();
             logEvent("Koniec trasy");
         }
@@ -264,14 +265,17 @@
             status.style.color = "#ff9800";
         } else if (type === 'Załadunek') {
             currentMode = 'Załadunek';
+            status.textContent = "Załadunek";
             status.style.color = "#ff9800";
         } else if (type === 'Rozładunek') {
             currentMode = 'Rozładunek';
+            status.textContent = "Rozładunek";
             status.style.color = "#ff9800";
         } else if (type === 'Pauza') {
             currentMode = 'Pauza';
+            status.textContent = "Pauza";
             status.style.color = "#2196f3";
-            continuousSeconds = 0; // Reset czasu ciągłej jazdy przy pauzie
+            continuousSeconds = 0; 
         }
 
         logEvent(type);
@@ -280,9 +284,8 @@
 
     function updateTimers() {
         if (isRunning) {
-            dailySeconds++; // Dzienny czas pracy leci zawsze, gdy trasa jest włączona
+            dailySeconds++; 
 
-            // Czas jazdy i ciągła jazda rosną TYLKO wtedy, gdy tryb to "Jazda"
             if (currentMode === 'Jazda') {
                 totalDriveSeconds++;
                 continuousSeconds++;
@@ -323,8 +326,7 @@
                 const speedKmh = speedMs ? (speedMs * 3.6).toFixed(0) : 0;
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
-                // Automatyczne wykrywanie ruchu powyżej 5 km/h (jeśli nie jesteśmy na pauzie/tankowaniu)
-                if (speedKmh > 5 && position.coords.accuracy < 50 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie') {
+                if (speedKmh > 5 && position.coords.accuracy < 50 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie' && currentMode !== 'Załadunek' && currentMode !== 'Rozładunek') {
                     currentMode = 'Jazda';
                     document.getElementById('appStatus').textContent = "W trasie (Jazda)";
                 }
@@ -407,7 +409,12 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = `raport_trasy_${Date.now()}.txt`;
+        document.body.appendChild(a);
         a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
     }
 
     function downloadJSON() {
@@ -428,7 +435,12 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = `kopia_zapasowa_${Date.now()}.json`;
+        document.body.appendChild(a);
         a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
     }
 
     function saveData() {
