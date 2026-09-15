@@ -127,22 +127,22 @@
     <div class="section-title">TRASA</div>
     <div class="input-group">
         <label>Skąd (Załadunek / Start):</label>
-        <input type="text" id="startPlace" placeholder="np. Poznań">
+        <input type="text" id="startPlace" placeholder="np. Poznań" oninput="saveData()">
     </div>
     <div class="input-group">
         <label>Dokąd (Rozładunek / Cel):</label>
-        <input type="text" id="endPlace" placeholder="np. Berlin">
+        <input type="text" id="endPlace" placeholder="np. Berlin" oninput="saveData()">
     </div>
 
     <div class="section-title">LICZNIK KILOMETRÓW</div>
     <div class="grid-2">
         <div class="input-group">
             <label>Początkowy (km):</label>
-            <input type="number" id="startOdo" placeholder="np. 150000">
+            <input type="number" id="startOdo" placeholder="np. 150000" oninput="calculateOdo()">
         </div>
         <div class="input-group">
             <label>Końcowy (km):</label>
-            <input type="number" id="endOdo" placeholder="np. 150350">
+            <input type="number" id="endOdo" placeholder="np. 150350" oninput="calculateOdo()">
         </div>
     </div>
 
@@ -205,11 +205,6 @@
     
     let timerInterval = null;
     let events = [];
-
-    document.getElementById('startOdo').addEventListener('input', calculateOdo);
-    document.getElementById('endOdo').addEventListener('input', calculateOdo);
-    document.getElementById('startPlace').addEventListener('input', saveData);
-    document.getElementById('endPlace').addEventListener('input', saveData);
 
     function calculateOdo() {
         const start = parseFloat(document.getElementById('startOdo').value) || 0;
@@ -322,29 +317,58 @@
         if ("geolocation" in navigator) {
             document.getElementById('gpsStatus').textContent = "GPS: Aktywny";
             watchId = navigator.geolocation.watchPosition(position => {
-                const speedMs = position.coords.speed;
-                const speedKmh = speedMs ? (speedMs * 3.6).toFixed(0) : 0;
+                const currentTimestamp = position.timestamp;
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                let speedKmh = 0;
+
+                if (lastPosition) {
+                    const timeDiffSec = (currentTimestamp - lastPosition.timestamp) / 1000;
+                    if (timeDiffSec > 0) {
+                        const distMeters = calculateDistance(lastPosition.coords.latitude, lastPosition.coords.longitude, lat, lon);
+                        // Jeśli odległość między odczytami jest mniejsza niż 3 metry, uznajemy to za szum w miejscu
+                        if (distMeters >= 3) {
+                            const speedMs = distMeters / timeDiffSec;
+                            speedKmh = Math.round(speedMs * 3.6);
+                        }
+                    }
+                }
+
+                // Twardy filtr postoju: poniżej 8 km/h prędkość to absolutne 0 i brak naliczania dystansu
+                if (speedKmh < 8 || accuracy > 35) {
+                    speedKmh = 0;
+                }
+
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
-                if (speedKmh > 5 && position.coords.accuracy < 50 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie' && currentMode !== 'Załadunek' && currentMode !== 'Rozładunek') {
+                // Jeśli faktycznie jedziemy (> 8 km/h)
+                if (speedKmh >= 8 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie' && currentMode !== 'Załadunek' && currentMode !== 'Rozładunek') {
                     currentMode = 'Jazda';
                     document.getElementById('appStatus').textContent = "W trasie (Jazda)";
                 }
 
-                if (lastPosition && speedKmh > 2 && position.coords.accuracy < 50) {
+                // Naliczanie dystansu tylko przy realnym ruchu
+                if (lastPosition && speedKmh >= 8) {
                     const dist = calculateDistance(
                         lastPosition.coords.latitude, lastPosition.coords.longitude,
-                        position.coords.latitude, position.coords.longitude
+                        lat, lon
                     );
-                    if(dist < 500) {
+                    if (dist >= 3 && dist < 500) { // Odrzucamy błędy powyżej 500m na raz
                         totalGpsDistance += (dist / 1000);
                         document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
+                        saveData();
                     }
                 }
-                lastPosition = position;
+
+                // Aktualizujemy pozycję bazową tylko wtedy, gdy dokładność jest dobra
+                if (accuracy <= 35) {
+                    lastPosition = position;
+                }
             }, () => {
                 document.getElementById('gpsStatus').textContent = "GPS: Błąd/Brak sygnału";
-            }, { enableHighAccuracy: true, maximumAge: 0 });
+            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
         }
     }
 
