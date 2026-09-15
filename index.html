@@ -176,10 +176,10 @@
     <button class="btn btn-start" id="mainBtn" onclick="toggleRoute()">Start Trasy</button>
 
     <div class="grid-2">
-        <button class="btn btn-action" onclick="logEvent('Tankowanie')">Tankowanie</button>
-        <button class="btn btn-action" onclick="logEvent('Załadunek')">Załadunek</button>
-        <button class="btn btn-action" onclick="logEvent('Rozładunek')">Rozładunek</button>
-        <button class="btn btn-action" onclick="logEvent('Pauza')">Pauza</button>
+        <button class="btn btn-action" onclick="setActivity('Tankowanie')">Tankowanie</button>
+        <button class="btn btn-action" onclick="setActivity('Załadunek')">Załadunek</button>
+        <button class="btn btn-action" onclick="setActivity('Rozładunek')">Rozładunek</button>
+        <button class="btn btn-action" onclick="setActivity('Pauza')">Pauza</button>
     </div>
 
     <button class="btn btn-stop" onclick="finishWork()">Zakończ Pracę</button>
@@ -194,13 +194,15 @@
 
 <script>
     let isRunning = false;
-    let isDriving = false;
+    let currentMode = 'Stop'; // 'Jazda', 'Tankowanie', 'Załadunek', 'Rozładunek', 'Pauza'
     let watchId = null;
     let totalGpsDistance = 0;
     let lastPosition = null;
+    
     let totalDriveSeconds = 0;
     let continuousSeconds = 0;
     let dailySeconds = 0;
+    
     let timerInterval = null;
     let events = [];
 
@@ -229,9 +231,9 @@
         if (isRunning) {
             btn.textContent = "Zatrzymaj Trasę";
             btn.style.backgroundColor = "#d32f2f";
-            status.textContent = "W trasie";
+            status.textContent = "W trasie (Jazda)";
             status.style.color = "#4caf50";
-            isDriving = true;
+            currentMode = 'Jazda';
             timerInterval = setInterval(updateTimers, 1000);
             startGPS();
             logEvent("Start trasy");
@@ -240,7 +242,7 @@
             btn.style.backgroundColor = "#4caf50";
             status.textContent = "Stop";
             status.style.color = "#ff9800";
-            isDriving = false;
+            currentMode = 'Stop';
             clearInterval(timerInterval);
             stopGPS();
             logEvent("Koniec trasy");
@@ -248,10 +250,40 @@
         saveData();
     }
 
+    function setActivity(type) {
+        if (!isRunning) {
+            alert("Najpierw uruchom trasę!");
+            return;
+        }
+
+        const status = document.getElementById('appStatus');
+        
+        if (type === 'Tankowanie') {
+            currentMode = 'Tankowanie';
+            status.textContent = "Tankowanie";
+            status.style.color = "#ff9800";
+        } else if (type === 'Załadunek') {
+            currentMode = 'Załadunek';
+            status.style.color = "#ff9800";
+        } else if (type === 'Rozładunek') {
+            currentMode = 'Rozładunek';
+            status.style.color = "#ff9800";
+        } else if (type === 'Pauza') {
+            currentMode = 'Pauza';
+            status.style.color = "#2196f3";
+            continuousSeconds = 0; // Reset czasu ciągłej jazdy przy pauzie
+        }
+
+        logEvent(type);
+        saveData();
+    }
+
     function updateTimers() {
         if (isRunning) {
-            dailySeconds++;
-            if (isDriving) {
+            dailySeconds++; // Dzienny czas pracy leci zawsze, gdy trasa jest włączona
+
+            // Czas jazdy i ciągła jazda rosną TYLKO wtedy, gdy tryb to "Jazda"
+            if (currentMode === 'Jazda') {
                 totalDriveSeconds++;
                 continuousSeconds++;
             }
@@ -291,8 +323,10 @@
                 const speedKmh = speedMs ? (speedMs * 3.6).toFixed(0) : 0;
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
-                if (speedKmh > 5 && position.coords.accuracy < 50) {
-                    isDriving = true;
+                // Automatyczne wykrywanie ruchu powyżej 5 km/h (jeśli nie jesteśmy na pauzie/tankowaniu)
+                if (speedKmh > 5 && position.coords.accuracy < 50 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie') {
+                    currentMode = 'Jazda';
+                    document.getElementById('appStatus').textContent = "W trasie (Jazda)";
                 }
 
                 if (lastPosition && speedKmh > 2 && position.coords.accuracy < 50) {
@@ -322,15 +356,6 @@
     function logEvent(type) {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        if (type !== 'Start trasy') {
-            isDriving = false;
-        }
-
-        if (type === 'Pauza') {
-            continuousSeconds = 0;
-            displayTime('continuousTime', continuousSeconds);
-        }
-
         const logContent = document.getElementById('logContent');
         if (events.length === 0) logContent.innerHTML = '';
         
@@ -357,17 +382,17 @@
         const driveTime = document.getElementById('driveTime').textContent;
         const dailyTime = document.getElementById('dailyTime').textContent;
 
-        let reportText = `RAPORT Z TRASY - KIEROWCA APP\n`;
+        let reportText = `🚚 RAPORT Z TRASY - KIEROWCA APP\n`;
         reportText += `--------------------------------\n`;
-        reportText += `Skąd: ${startPlace}\n`;
-        reportText += `Dokąd: ${endPlace}\n`;
-        reportText += `Start licznik: ${startOdo} km\n`;
-        reportText += `Koniec licznik: ${endOdo} km\n`;
-        reportText += `Dystans z licznika: ${calcKm}\n`;
-        reportText += `Dystans z GPS: ${gpsKm} km\n`;
-        reportText += `Czas jazdy (Trasa): ${driveTime}\n`;
-        reportText += `Dzienny czas pracy: ${dailyTime}\n\n`;
-        reportText += `ZDARZENIA:\n`;
+        reportText += `📍 Skąd: ${startPlace}\n`;
+        reportText += `🏁 Dokąd: ${endPlace}\n`;
+        reportText += `🔢 Start licznik: ${startOdo} km\n`;
+        reportText += `🔢 Koniec licznik: ${endOdo} km\n`;
+        reportText += `📏 Dystans z licznika: ${calcKm}\n`;
+        reportText += `🛰️ Dystans z GPS: ${gpsKm} km\n`;
+        reportText += `⏱️ Czas jazdy: ${driveTime}\n`;
+        reportText += `⏱️ Dzienny czas pracy: ${dailyTime}\n\n`;
+        reportText += `📋 ZDARZENIA:\n`;
 
         if (events.length === 0) {
             reportText += `Brak zdarzeń\n`;
@@ -416,7 +441,9 @@
             totalDriveSeconds: totalDriveSeconds,
             continuousSeconds: continuousSeconds,
             dailySeconds: dailySeconds,
-            events: events
+            events: events,
+            currentMode: currentMode,
+            isRunning: isRunning
         };
         localStorage.setItem('kierowcaData', JSON.stringify(data));
     }
