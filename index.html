@@ -1,608 +1,456 @@
-
-    type,
-    at:now(),
-    ...extra
-  });
-
-  renderLog();
-  persistActive();
-}
-
-function renderLog(){
-  const box=$('log');
-
-  if(!session || !session.events || !session.events.length){
-    box.innerHTML='<div class="small">Brak zdarzeń</div>';
-    return;
-  }
-
-  box.innerHTML=session.events.map(e=>{
-    let text=e.type;
-
-    if(e.duration!=null){
-      return `<div class="entry">
-        <b>${timeOnly(e.at)}</b>${text}
-        <span class="dur">${fmt(e.duration/1000)}</span>
-      </div>`;
-    }
-
-    return `<div class="entry"><b>${timeOnly(e.at)}</b>${text}</div>`;
-  }).join('');
-}
-
-function currentStateMs(){
-  if(!session || !session.stateStartedAt)return 0;
-  return Math.max(0,now()-session.stateStartedAt);
-}
-
-function commitStateTime(){
-  if(!session)return;
-
-  const elapsed=currentStateMs();
-
-  if(session.state==='W trasie'){
-    session.driveMs+=elapsed;
-    session.workMs+=elapsed;
-    session.continuousMs+=elapsed;
-  }else{
-    session.workMs+=elapsed;
-  }
-
-  session.stateStartedAt=now();
-}
-
-function commitContinuous(){
-  if(!session || !session.continuousStart)return;
-
-  session.continuousMs=Math.max(
-    session.continuousMs,
-    now()-session.continuousStart
-  );
-}
-
-function startDriving(){
-  if(!session)return;
-
-  commitStateTime();
-
-  session.state='W
-    function startGPS(){
-  if(!navigator.geolocation){
-    $('gpsStatus').textContent='GPS: brak obsługi';
-    return;
-  }
-
-  if(watchId!==null)return;
-
-  $('gpsStatus').textContent='GPS: oczekiwanie...';
-
-  watchId=navigator.geolocation.watchPosition(
-    handlePosition,
-    handleGPSError,
-    {
-      enableHighAccuracy:true,
-      maximumAge:2000,
-      timeout:10000
-    }
-  );
-}
-
-function stopGPS(){
-  if(watchId!==null){
-    navigator.geolocation.clearWatch(watchId);
-    watchId=null;
-  }
-
-  $('gpsStatus').textContent='GPS: wyłączony';
-  lastPosition=null;
-  movingSamples=0;
-  stationarySamples=0;
-}
-
-function distanceMeters(lat1,lon1,lat2,lon2){
-  const R=6371000;
-  const p1=lat1*Math.PI/180;
-  const p2=lat2*Math.PI/180;
-  const dp=(lat2-lat1)*Math.PI/180;
-  const dl=(lon2-lon1)*Math.PI/180;
-
-  const a=
-    Math.sin(dp/2)**2+
-    Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
-
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-function handlePosition(pos){
-  if(!session || !session.active)return;
-
-  const c=pos.coords;
-  const accuracy=Number(c.accuracy)||999;
-
-  if(accuracy>60){
-    $('gpsStatus').textContent=
-      'GPS: słaba dokładność ('+Math.round(accuracy)+' m)';
-    return;
-      
-  }
-
-  const lat=c.latitude;
-  const lon=c.longitude;
-
-  let speed=Number.isFinite(c.speed)&&c.speed!==null
-    ? Math.max(0,c.speed*3.6)
-    : 0;
-
-  if(lastPosition){
-    const d=distanceMeters(
-      last
-        function startGPS(){
-  if(!navigator.geolocation){
-    $('gpsStatus').textContent='GPS: brak obsługi';
-    return;
-  }
-
-  if(watchId!==null)return;
-
-  $('gpsStatus').textContent='GPS: oczekiwanie...';
-
-  watchId=navigator.geolocation.watchPosition(
-    handlePosition,
-    handleGPSError,
-    {
-      enableHighAccuracy:true,
-      maximumAge:2000,
-      timeout:10000
-    }
-  );
-}
-
-function stopGPS(){
-  if(watchId!==null){
-    navigator.geolocation.clearWatch(watchId);
-    watchId=null;
-  }
-
-  $('gpsStatus').textContent='GPS: wyłączony';
-  lastPosition=null;
-  movingSamples=0;
-  stationarySamples=0;
-}
-
-function distanceMeters(lat1,lon1,lat2,lon2){
-  const R=6371000;
-  const p1=lat1*Math.PI/180;
-  const p2=lat2*Math.PI/180;
-  const dp=(lat2-lat1)*Math.PI/180;
-  const dl=(lon2-lon1)*Math.PI/180;
-
-  const a=
-    Math.sin(dp/2)**2+
-    Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
-
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-function handlePosition(pos){
-  if(!session || !session.active)return;
-
-  const c=pos.coords;
-  const accuracy=Number(c.accuracy)||999;
-
-  if(accuracy>60){
-    $('gpsStatus').textContent=
-      'GPS: słaba dokładność ('+Math.round(accuracy)+' m)';
-    return;
-  }
-
-  const lat=c.latitude;
-  const lon=c.longitude;
-
-  let speed=Number.isFinite(c.speed)&&c.speed!==null
-    ? Math.max(0,c.speed*3.6)
-    : 0;
-
-  if(lastPosition){
-    const d=distanceMeters(
-      lastPosition.lat,
-      lastPosition.lon,
-      lat,
-      lon
-    );
-
-    const dt=(pos.timestamp-lastPosition.time)/1000;
-
-    if(dt>0){
-      const calculatedSpeed=d/dt*3.6;
-
-      if(speed<1){
-        speed=calculatedSpeed;
-      }
-
-      /*
-       * Odrzucamy duże skoki GPS.
-       * Przy normalnej jeździe ciężarówką 250 km/h
-       * traktujemy jako nierealny wynik.
-       */
-      if(
-        d>=5 &&
-        d<1000 &&
-        calculatedSpeed<250
-      ){
-        session.gpsKm+=d/1000;
-      }
-    }
-  }
-
-  lastPosition={
-    lat,
-    lon,
-    time:pos.timestamp
-  };
-
-  session.gpsSamples++;
-  session.lastGpsAt=pos.timestamp;
-  session.lastSpeed=speed;
-
-  $('gpsSpeed').textContent=Math.round(speed)+' km/h';
-  $('gpsKm').textContent=session.gpsKm.toFixed(2)+' km';
-
-  updateOdo();
-
-  $('gpsStatus').textContent=
-    'GPS: OK ±'+Math.round(accuracy)+' m';
-
-  /*
-   * Automatyczny powrót do jazdy.
-   *
-   * Normalna czynność:
-   * 3 kolejne próbki z prędkością >= 8 km/h.
-   *
-   * Pauza:
-   * 4 kolejne próbki z prędkością >= 8 km/h.
-   */
-  if(session.state!=='W trasie'){
-    if(speed>=8){
-      movingSamples++;
-      stationarySamples=0;
-    }else{
-      movingSamples=0;
-      stationarySamples++;
-    }
-
-    const required=session.state==='Pauza'?4:3;
-
-    if(movingSamples>=required){
-      resumeDriving();
-    }
-  }else{
-    if(speed<3){
-      stationarySamples++;
-    }else{
-      stationarySamples=0;
-    }
-  }
-
-  persistActive();
-}
-
-function handleGPSError(err){
-  let text='GPS: błąd';
-
-  if(err){
-    if(err.code===1)text='GPS: brak zgody na lokalizację';
-    if(err.code===2)text='GPS: pozycja niedostępna';
-    if(err.code===3)text='GPS: przekroczony czas oczekiwania';
-  }
-
-  $('gpsStatus').textContent=text;
-}
-
-async function loadActiveSession(){
-  const all=await txAll();
-
-  const active=all
-    .filter(x=>x.active===true)
-    .sort((a,b)=>(b.startAt||0)-(a.startAt||0))[0];
-
-  if(!active)return;
-
-  session=active;
-
-  if(!session.stateStartedAt){
-    session.stateStartedAt=now();
-  }
-
-  $('startPlace').value=session.startPlace||'';
-  $('endPlace').value=session.endPlace||'';
-  $('startOdo').value=session.startOdo||'';
-  $('endOdo').value=session.endOdo||'';
-
-  renderLog();
-  updateOdo();
-  updateUI();
-
-  $('resumeBanner').classList.remove('hidden');
-}
-
-function resumeSession(){
-  if(!session)return;
-
-  $('resumeBanner').classList.add('hidden');
-
-  session.active=true;
-
-  if(session.state==='Stop' || session.state==='Zakończona'){
-    session.state='W trasie';
-  }
-
-  session.stateStartedAt=now();
-
-  startGPS();
-  startTimer();
-
-  updateUI();
-  persistActive();
-}
-
-function buildReport(s){
-  if(!s)return '';
-
-  const odoStart=parseFloat(s.startOdo);
-  const odoEnd=parseFloat(s.endOdo);
-
-  const odoKmValue=
-    Number.isFinite(odoStart)&&Number.isFinite(odoEnd)
-      ? odoEnd-odoStart
-      : 0;
-
-  let totalWork=s.workMs||0;
-  let totalDrive=s.driveMs||0;
-
-  if(s.active){
-    const elapsed=currentStateMs();
-
-    if(s.state==='W trasie'){
-      totalDrive+=elapsed;
-      totalWork+=elapsed;
-    }else{
-      totalWork+=elapsed;
-    }
-  }
-
-  const diff=odoKmValue-(s.gpsKm||0);
-
-  let txt='KIEROWCA APP PRO 2.0\n';
-  txt+='====================\n';
-  txt+='Data rozpoczęcia: '+dateTime(s.startAt)+'\n';
-
-  if(s.endAt){
-    txt+='Data zakończenia: '+dateTime(s.endAt)+'\n';
-  }
-
-  txt+='\nTRASA\n';
-  txt+='Skąd: '+(s.startPlace||'-')+'\n';
-  txt+='Dokąd: '+(s.endPlace||'-')+'\n';
-
-  txt+='\nPRZEBIEG\n';
-  txt+='Licznik początkowy: '+(s.startOdo||'-')+' km\n';
-  txt+='Licznik końcowy: '+(s.endOdo||'-')+' km\n';
-  txt+='Kilometry z licznika: '+odoKmValue.toFixed(2)+' km\n';
-  txt+='Kilometry GPS: '+(s.gpsKm||0).toFixed(2)+' km\n';
-  txt+='Różnica: '+diff.toFixed(2)+' km\n';
-
-  txt+='\nCZASY\n';
-  txt+='Czas jazdy: '+fmt(totalDrive/1000)+'\n';
-  txt+='Czas pracy: '+fmt(totalWork/1000)+'\n';
-
-  txt+='\nZDARZENIA\n';
-
-  if(s.events && s.events.length){
-    s.events.forEach(e=>{
-      txt+=timeOnly(e.at)+' - '+e.type;
-
-      if(e.duration!=null){
-        txt+=' ('+fmt(e.duration/1000)+')';
-      }
-
-      txt+='\n';
-    });
-  }else{
-    txt+='Brak\n';
-  }
-
-  return txt;
-}
-
-async function shareReport(){
-  if(!session){
-    alert('Brak trasy do raportu.');
-    return;
-  }
-
-  const report=buildReport(session);
-
-  if(navigator.share){
-    try{
-      await navigator.share({
-        title:'Kierowca App Pro',
-        text:report
-      });
-    }catch(e){}
-  }else{
-    try{
-      await navigator.clipboard.writeText(report);
-      alert('Raport skopiowany do schowka.');
-    }catch(e){
-      prompt('Skopiuj raport:',report);
-    }
-  }
-}
-
-async function exportBackup(){
-  const all=await txAll();
-
-  const data={
-    app:'Kierowca App Pro',
-    version:'2.0',
-    exportedAt:new Date().toISOString(),
-    trips:all
-  };
-
-  const blob=new Blob(
-    [JSON.stringify(data,null,2)],
-    {type:'application/json'}
-  );
-
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-
-  a.href=url;
-  a.download=
-    'kierowca-backup-'+
-    new Date().toISOString().slice(0,10)+
-    '.json';
-
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-function importBackup(){
-  const input=document.createElement('input');
-
-  input.type='file';
-  input.accept='.json,application/json';
-
-  input.onchange=async()=>{
-    const file=input.files[0];
-
-    if(!file)return;
-
-    try{
-      const text=await file.text();
-      const data=JSON.parse(text);
-
-      if(!data || !Array.isArray(data.trips)){
-        throw new Error('Nieprawidłowa kopia');
-      }
-
-      if(!confirm(
-        'Wczytać kopię? Istniejące dane o tych samych ID zostaną zastąpione.'
-      ))return;
-
-      for(const trip of data.trips){
-        if(trip && trip.id){
-          await txPut(trip);
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kierowca App Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --box-bg: #222222;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent-orange: #ff9800;
+            --accent-green: #4caf50;
+            --accent-blue: #2196f3;
+            --accent-red: #f44336;
+            --accent-purple: #9c27b0;
+            --border-color: #333333;
         }
-      }
 
-      alert('Kopia została wczytana.');
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
 
-      location.reload();
+        .container { width: 100%; max-width: 500px; }
+        h2 { text-align: center; margin: 10px 0 20px 0; font-size: 22px; }
 
-    }catch(e){
-      alert('Nie udało się wczytać kopii.');
-      console.error(e);
-    }
-  };
+        .status-card {
+            background: var(--box-bg);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .status-card .state { font-size: 16px; margin-bottom: 5px; }
+        .status-card .state span { color: var(--accent-orange); font-weight: bold; }
+        .status-card .gps { font-size: 12px; color: var(--text-muted); }
 
-  input.click();
-}
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin: 15px 0 5px 5px;
+        }
 
-async function openHistory(){
-  const all=await txAll();
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; margin-left: 5px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        input::placeholder { color: #555; }
 
-  all.sort((a,b)=>
-    (b.startAt||0)-(a.startAt||0)
-  );
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 
-  const list=$('historyList');
+        .metric-box {
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 5px;
+            text-align: center;
+        }
+        .metric-box label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
+        .metric-box .val { font-size: 16px; font-weight: bold; }
+        .val-green { color: var(--accent-green); }
+        .val-blue { color: var(--accent-blue); }
+        .val-orange { color: var(--accent-orange); }
 
-  if(!all.length){
-    list.innerHTML='<div class="small">Brak zapisanych tras.</div>';
-  }else{
-    list.innerHTML=all.map(s=>{
-      const start=s.startPlace||'-';
-      const end=s.endPlace||'-';
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .btn-start { background-color: var(--accent-green); margin-top: 10px; }
+        .btn-action { background-color: var(--accent-orange); }
+        .btn-stop { background-color: var(--accent-red); margin-top: 5px; }
+        .btn-csv { background-color: #0277bd; }
+        .btn-json { background-color: var(--accent-purple); }
+        .btn-clear { background-color: #424242; color: #ccc; }
 
-      const a=parseFloat(s.startOdo);
-      const b=parseFloat(s.endOdo);
+        .log-box {
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            height: 100px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .log-time { color: var(--text-main); font-weight: bold; margin-right: 5px; }
+    </style>
+</head>
+<body>
 
-      const km=
-        Number.isFinite(a)&&Number.isFinite(b)
-          ? (b-a).toFixed(1)
-          : '0.0';
+<div class="container">
+    <h2>Kierowca App Pro</h2>
+    
+    <div class="status-card">
+        <div class="state">Stan: <span id="appStatus">Stop</span></div>
+        <div class="gps" id="gpsStatus">GPS: Gotowy</div>
+    </div>
 
-      return `
-        <div class="history-item">
-          <b>${dateTime(s.startAt)}</b>
-          <div>${start} → ${end}</div>
-          <div>Przebieg: ${km} km</div>
-          <div>GPS: ${(s.gpsKm||0).toFixed(1)} km</div>
-          <div>Jazda: ${fmt((s.driveMs||0)/1000)}</div>
+    <div class="section-title">TRASA</div>
+    <div class="input-group">
+        <label>Skąd (Załadunek / Start):</label>
+        <input type="text" id="startPlace" placeholder="np. Poznań">
+    </div>
+    <div class="input-group">
+        <label>Dokąd (Rozładunek / Cel):</label>
+        <input type="text" id="endPlace" placeholder="np. Berlin">
+    </div>
+
+    <div class="section-title">LICZNIK KILOMETRÓW</div>
+    <div class="grid-2">
+        <div class="input-group">
+            <label>Początkowy (km):</label>
+            <input type="number" id="startOdo" placeholder="np. 150000">
         </div>
-      `;
-    }).join('');
-  }
+        <div class="input-group">
+            <label>Końcowy (km):</label>
+            <input type="number" id="endOdo" placeholder="np. 150350">
+        </div>
+    </div>
 
-  $('historyDialog').showModal();
-}async function clearAll(){
-  if(!confirm(
-    'UWAGA!\n\nZostaną usunięte wszystkie zapisane trasy i historia.\n\nCzy na pewno chcesz kontynuować?'
-  ))return;
+    <div class="grid-2">
+        <div class="metric-box">
+            <label>km z licznika</label>
+            <div class="val val-green" id="calcKm">0.00 km</div>
+        </div>
+        <div class="metric-box">
+            <label>km z GPS</label>
+            <div class="val val-blue" id="gpsKm">0.00 km</div>
+        </div>
+        <div class="metric-box">
+            <label>Prędkość GPS</label>
+            <div class="val val-green" id="gpsSpeed">0 km/h</div>
+        </div>
+        <div class="metric-box">
+            <label>Czas jazdy (Trasa)</label>
+            <div class="val val-green" id="driveTime">0:00:00</div>
+        </div>
+        <div class="metric-box">
+            <label>Ciągła jazda</label>
+            <div class="val val-orange" id="continuousTime">0:00:00</div>
+        </div>
+        <div class="metric-box">
+            <label>Dzienny czas pracy</label>
+            <div class="val val-green" id="dailyTime">0:00:00</div>
+        </div>
+    </div>
 
-  await txClear();
+    <button class="btn btn-start" id="mainBtn" onclick="toggleRoute()">Start Trasy</button>
 
-  session=null;
-  stopGPS();
-  stopTimer();
+    <div class="grid-2">
+        <button class="btn btn-action" onclick="logEvent('Tankowanie')">Tankowanie</button>
+        <button class="btn btn-action" onclick="logEvent('Załadunek')">Załadunek</button>
+        <button class="btn btn-action" onclick="logEvent('Rozładunek')">Rozładunek</button>
+        <button class="btn btn-action" onclick="logEvent('Pauza')">Pauza</button>
+    </div>
 
-  $('resumeBanner').classList.add('hidden');
+    <button class="btn btn-stop" onclick="finishWork()">Zakończ Pracę</button>
 
-  $('startPlace').value='';
-  $('endPlace').value='';
-  $('startOdo').value='';
-  $('endOdo').value='';
+    <div class="section-title">DZIENNIK ZDARZEŃ</div>
+    <div class="log-box" id="logContent">Brak zdarzeń</div>
 
-  $('gpsKm').textContent='0.00 km';
-  $('gpsSpeed').textContent='0 km/h';
-  $('difference').textContent='0.00 km';
+    <button class="btn btn-csv" onclick="shareReport()">Generuj i wyślij raport</button>
+    <button class="btn btn-json" onclick="downloadJSON()">Zapisz kopię zapasową (JSON)</button>
+    <button class="btn btn-clear" onclick="clearData()">Wyczyść historię i dane</button>
+</div>
 
-  $('log').innerHTML=
-    '<div class="small">Brak zdarzeń</div>';
+<script>
+    let isRunning = false;
+    let watchId = null;
+    let totalGpsDistance = 0;
+    let lastPosition = null;
+    
+    let totalDriveSeconds = 0;
+    let continuousSeconds = 0;
+    let dailySeconds = 0;
+    let timerInterval = null;
+    let events = [];
 
-  updateUI();
+    document.getElementById('startOdo').addEventListener('input', calculateOdo);
+    document.getElementById('endOdo').addEventListener('input', calculateOdo);
+    document.getElementById('startPlace').addEventListener('input', saveData);
+    document.getElementById('endPlace').addEventListener('input', saveData);
 
-  alert('Wszystkie dane zostały usunięte.');
-}
-
-window.addEventListener('beforeunload',()=>{
-  if(session && session.active){
-    persistActive();
-  }
-});
-
-async function init(){
-  try{
-    await openDB();
-    await loadActiveSession();
-
-    if(!session){
-      updateUI();
+    function calculateOdo() {
+        const start = parseFloat(document.getElementById('startOdo').value) || 0;
+        const end = parseFloat(document.getElementById('endOdo').value) || 0;
+        const calcBox = document.getElementById('calcKm');
+        if (end > start) {
+            calcBox.textContent = (end - start).toFixed(2) + " km";
+        } else {
+            calcBox.textContent = "0.00 km";
+        }
+        saveData();
     }
 
-    startTimer();
+    function toggleRoute() {
+        isRunning = !isRunning;
+        const btn = document.getElementById('mainBtn');
+        const status = document.getElementById('appStatus');
+        
+        if (isRunning) {
+            btn.textContent = "Zatrzymaj Trasę";
+            btn.style.backgroundColor = "#d32f2f";
+            status.textContent = "W trasie";
+            status.style.color = "#4caf50";
+            timerInterval = setInterval(updateTimers, 1000);
+            startGPS();
+            logEvent("Start trasy");
+        } else {
+            btn.textContent = "Start Trasy";
+            btn.style.backgroundColor = "#4caf50";
+            status.textContent = "Stop";
+            status.style.color = "#ff9800";
+            clearInterval(timerInterval);
+            stopGPS();
+            logEvent("Koniec trasy");
+        }
+        saveData();
+    }
 
-  }catch(e){
-    console.error(e);
-    alert('Nie udało się uruchomić bazy danych aplikacji.');
-  }
-}
+    function updateTimers() {
+        totalDriveSeconds++;
+        continuousSeconds++;
+        dailySeconds++;
+        
+        displayTime('driveTime', totalDriveSeconds);
+        displayTime('continuousTime', continuousSeconds);
+        displayTime('dailyTime', dailySeconds);
+        saveData();
+    }
 
-init();
+    function displayTime(elementId, totalSeconds) {
+        const hrs = Math.floor(totalSeconds / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
+        document.getElementById(elementId).textContent = `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const f1 = lat1 * Math.PI/180;
+        const f2 = lat2 * Math.PI/180;
+        const df = (lat2-lat1) * Math.PI/180;
+        const dl = (lon2-lon1) * Math.PI/180;
+        const a = Math.sin(df/2) * Math.sin(df/2) +
+                  Math.cos(f1) * Math.cos(f2) *
+                  Math.sin(dl/2) * Math.sin(dl/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function startGPS() {
+        if ("geolocation" in navigator) {
+            document.getElementById('gpsStatus').textContent = "GPS: Aktywny";
+            watchId = navigator.geolocation.watchPosition(position => {
+                const speedMs = position.coords.speed;
+                const speedKmh = speedMs ? (speedMs * 3.6).toFixed(0) : 0;
+                document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
+
+                if (lastPosition && speedKmh > 2 && position.coords.accuracy < 50) {
+                    const dist = calculateDistance(
+                        lastPosition.coords.latitude, lastPosition.coords.longitude,
+                        position.coords.latitude, position.coords.longitude
+                    );
+                    if(dist < 500) {
+                        totalGpsDistance += (dist / 1000);
+                        document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
+                    }
+                }
+                lastPosition = position;
+            }, error => {
+                document.getElementById('gpsStatus').textContent = "GPS: Błąd/Brak sygnału";
+            }, { enableHighAccuracy: true, maximumAge: 0 });
+        }
+    }
+
+    function stopGPS() {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        document.getElementById('gpsSpeed').textContent = "0 km/h";
+        document.getElementById('gpsStatus').textContent = "GPS: Gotowy";
+        lastPosition = null;
+    }
+
+    function logEvent(type) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        // Jeśli kliknięto pauzę, zerujemy czas ciągłej jazdy!
+        if (type === 'Pauza') {
+            continuousSeconds = 0;
+            displayTime('continuousTime', continuousSeconds);
+        }
+
+        const logContent = document.getElementById('logContent');
+        if (events.length === 0) logContent.innerHTML = '';
+        
+        const entry = `<div class="log-entry"><span class="log-time">[${time}]</span> ${type}</div>`;
+        logContent.innerHTML += entry;
+        logContent.scrollTop = logContent.scrollHeight;
+        
+        events.push({ time, type });
+        saveData();
+    }
+
+    function finishWork() {
+        if (isRunning) toggleRoute();
+        logEvent("Zakończenie pracy");
+        shareReport();
+    }
+
+    async function shareReport() {
+        const startPlace = document.getElementById('startPlace').value || "Brak";
+        const endPlace = document.getElementById('endPlace').value || "Brak";
+        const startOdo = document.getElementById('startOdo').value || "0";
+        const endOdo = document.getElementById('endOdo').value || "0";
+        const gpsKm = totalGpsDistance.toFixed(2);
+        const calcKm = document.getElementById('calcKm').textContent;
+        const driveTime = document.getElementById('driveTime').textContent;
+        const dailyTime = document.getElementById('dailyTime').textContent;
+
+        let reportText = `🚚 RAPORT Z TRASY - KIEROWCA APP\n`;
+        reportText += `--------------------------------\n`;
+        reportText += `📍 Skąd: ${startPlace}\n`;
+        reportText += `🏁 Dokąd: ${endPlace}\n`;
+        reportText += `🔢 Start licznik: ${startOdo} km\n`;
+        reportText += `🔢 Koniec licznik: ${endOdo} km\n`;
+        reportText += `📏 Dystans z licznika: ${calcKm}\n`;
+        reportText += `🛰️ Dystans z GPS: ${gpsKm} km\n`;
+        reportText += `⏱️ Czas jazdy (Trasa): ${driveTime}\n`;
+        reportText += `⏱️ Dzienny czas pracy: ${dailyTime}\n\n`;
+        reportText += `📋 ZDARZENIA:\n`;
+
+        if (events.length === 0) {
+            reportText += `Brak zdarzeń\n`;
+        } else {
+            events.forEach(e => {
+                reportText += `[${e.time}] ${e.type}\n`;
+            });
+        }
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Raport z trasy', text: reportText });
+            } catch (err) {}
+        } else {
+            navigator.clipboard.writeText(reportText).then(() => alert("Skopiowano raport!"));
+        }
+    }
+
+    function downloadJSON() {
+        const data = {
+            startPlace: document.getElementById('startPlace').value,
+            endPlace: document.getElementById('endPlace').value,
+            startOdo: document.getElementById('startOdo').value,
+            endOdo: document.getElementById('endOdo').value,
+            gpsKm: totalGpsDistance,
+            totalDriveSeconds: totalDriveSeconds,
+            continuousSeconds: continuousSeconds,
+            dailySeconds: dailySeconds,
+            events: events,
+            exportDate: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kopia_zapasowa_${Date.now()}.json`;
+        a.click();
+    }
+
+    function saveData() {
+        const data = {
+            startOdo: document.getElementById('startOdo').value,
+            endOdo: document.getElementById('endOdo').value,
+            startPlace: document.getElementById('startPlace').value,
+            endPlace: document.getElementById('endPlace').value,
+            gpsKm: totalGpsDistance,
+            totalDriveSeconds: totalDriveSeconds,
+            continuousSeconds: continuousSeconds,
+            dailySeconds: dailySeconds,
+            events: events
+        };
+        localStorage.setItem('kierowcaData', JSON.stringify(data));
+    }
+
+    function loadData() {
+        const saved = JSON.parse(localStorage.getItem('kierowcaData'));
+        if (saved) {
+            if(saved.startOdo) document.getElementById('startOdo').value = saved.startOdo;
+            if(saved.endOdo) document.getElementById('endOdo').value = saved.endOdo;
+            if(saved.startPlace) document.getElementById('startPlace').value = saved.startPlace;
+            if(saved.endPlace) document.getElementById('endPlace').value = saved.endPlace;
+            
+            totalGpsDistance = saved.gpsKm || 0;
+            document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
+            calculateOdo();
+
+            totalDriveSeconds = saved.totalDriveSeconds || 0;
+            continuousSeconds = saved.continuousSeconds || 0;
+            dailySeconds = saved.dailySeconds || 0;
+
+            displayTime('driveTime', totalDriveSeconds);
+            displayTime('continuousTime', continuousSeconds);
+            displayTime('dailyTime', dailySeconds);
+
+            if (saved.events && saved.events.length > 0) {
+                events = saved.events;
+                const logContent = document.getElementById('logContent');
+                logContent.innerHTML = '';
+                events.forEach(e => {
+                    logContent.innerHTML += `<div class="log-entry"><span class="log-time">[${e.time}]</span> ${e.type}</div>`;
+                });
+                logContent.scrollTop = logContent.scrollHeight;
+            }
+        }
+    }
+
+    function clearData() {
+        if(confirm("Na pewno wyczyścić całą historię?")) {
+            localStorage.removeItem('kierowcaData');
+            location.reload();
+        }
+    }
+
+    window.onload = loadData;
 </script>
+
 </body>
 </html>
