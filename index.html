@@ -27,8 +27,10 @@ input:focus{border-color:var(--blue)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .metric{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;min-height:65px}
-.metric small
-    function readForm(){
+  .metric small{display:block;color:var(--muted);font-size:11px}
+</style>
+<script>
+function readForm(){
   return {
     startPlace:$('startPlace').value.trim(),
     endPlace:$('endPlace').value.trim(),
