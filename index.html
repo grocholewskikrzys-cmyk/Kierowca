@@ -224,7 +224,6 @@
         const status = document.getElementById('appStatus');
         
         if (isRunning) {
-            // Nowy start – zerujemy dystans GPS dla nowej trasy
             totalGpsDistance = 0;
             document.getElementById('gpsKm').textContent = "0.00 km";
             lastPosition = null;
@@ -333,40 +332,41 @@
                     const timeDiffSec = (currentTimestamp - lastPosition.timestamp) / 1000;
                     if (timeDiffSec > 0) {
                         const distMeters = calculateDistance(lastPosition.coords.latitude, lastPosition.coords.longitude, lat, lon);
-                        // Ignorujemy przesunięcia poniżej 5 metrów (szum w miejscu)
-                        if (distMeters >= 5) {
+                        if (distMeters >= 15) { // Ignorujemy skoki poniżej 15 metrów
                             const speedMs = distMeters / timeDiffSec;
                             speedKmh = Math.round(speedMs * 3.6);
                         }
                     }
                 }
 
-                // Twardy filtr postoju: poniżej 8 km/h lub słaba dokładność to 0
-                if (speedKmh < 8 || accuracy > 30) {
+                // Filtr postoju: poniżej 5 km/h lub słaba dokładność (>25m) to bezwzględnie 0
+                if (speedKmh < 5 || accuracy > 25) {
                     speedKmh = 0;
                 }
 
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
-                if (speedKmh >= 8 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie' && currentMode !== 'Załadunek' && currentMode !== 'Rozładunek') {
+                if (speedKmh >= 5 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie' && currentMode !== 'Załadunek' && currentMode !== 'Rozładunek') {
                     currentMode = 'Jazda';
                     document.getElementById('appStatus').textContent = "W trasie (Jazda)";
                 }
 
-                // Naliczanie dystansu tylko przy realnym ruchu >= 5 metrów
-                if (lastPosition && speedKmh >= 8) {
+                // Naliczanie dystansu tylko przy realnym ruchu >= 15 metrów i prędkości >= 5 km/h
+                if (lastPosition && speedKmh >= 5) {
                     const dist = calculateDistance(
                         lastPosition.coords.latitude, lastPosition.coords.longitude,
                         lat, lon
                     );
-                    if (dist >= 5 && dist < 500) {
+                    if (dist >= 15 && dist < 1000) {
                         totalGpsDistance += (dist / 1000);
                         document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
                         saveData();
                     }
                 }
 
-                if (accuracy <= 30) {
+                if (accuracy <= 25 && speedKmh >= 5) {
+                    lastPosition = position;
+                } else if (!lastPosition) {
                     lastPosition = position;
                 }
             }, () => {
@@ -459,7 +459,7 @@
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.getElementById('url');
+        const a = document.createElement('a');
         a.href = url;
         a.download = `kopia_zapasowa_${Date.now()}.json`;
         document.body.appendChild(a);
@@ -495,7 +495,11 @@
             if(saved.startPlace) document.getElementById('startPlace').value = saved.startPlace;
             if(saved.endPlace) document.getElementById('endPlace').value = saved.endPlace;
             
-            totalGpsDistance = saved.gpsKm || 0;
+            if (saved.isRunning) {
+                totalGpsDistance = saved.gpsKm || 0;
+            } else {
+                totalGpsDistance = 0;
+            }
             document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
             calculateOdo();
 
