@@ -224,6 +224,11 @@
         const status = document.getElementById('appStatus');
         
         if (isRunning) {
+            // Nowy start – zerujemy dystans GPS dla nowej trasy
+            totalGpsDistance = 0;
+            document.getElementById('gpsKm').textContent = "0.00 km";
+            lastPosition = null;
+
             btn.textContent = "Zatrzymaj Trasę";
             btn.style.backgroundColor = "#d32f2f";
             status.textContent = "W trasie (Jazda)";
@@ -328,42 +333,40 @@
                     const timeDiffSec = (currentTimestamp - lastPosition.timestamp) / 1000;
                     if (timeDiffSec > 0) {
                         const distMeters = calculateDistance(lastPosition.coords.latitude, lastPosition.coords.longitude, lat, lon);
-                        // Jeśli odległość między odczytami jest mniejsza niż 3 metry, uznajemy to za szum w miejscu
-                        if (distMeters >= 3) {
+                        // Ignorujemy przesunięcia poniżej 5 metrów (szum w miejscu)
+                        if (distMeters >= 5) {
                             const speedMs = distMeters / timeDiffSec;
                             speedKmh = Math.round(speedMs * 3.6);
                         }
                     }
                 }
 
-                // Twardy filtr postoju: poniżej 8 km/h prędkość to absolutne 0 i brak naliczania dystansu
-                if (speedKmh < 8 || accuracy > 35) {
+                // Twardy filtr postoju: poniżej 8 km/h lub słaba dokładność to 0
+                if (speedKmh < 8 || accuracy > 30) {
                     speedKmh = 0;
                 }
 
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
-                // Jeśli faktycznie jedziemy (> 8 km/h)
                 if (speedKmh >= 8 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie' && currentMode !== 'Załadunek' && currentMode !== 'Rozładunek') {
                     currentMode = 'Jazda';
                     document.getElementById('appStatus').textContent = "W trasie (Jazda)";
                 }
 
-                // Naliczanie dystansu tylko przy realnym ruchu
+                // Naliczanie dystansu tylko przy realnym ruchu >= 5 metrów
                 if (lastPosition && speedKmh >= 8) {
                     const dist = calculateDistance(
                         lastPosition.coords.latitude, lastPosition.coords.longitude,
                         lat, lon
                     );
-                    if (dist >= 3 && dist < 500) { // Odrzucamy błędy powyżej 500m na raz
+                    if (dist >= 5 && dist < 500) {
                         totalGpsDistance += (dist / 1000);
                         document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
                         saveData();
                     }
                 }
 
-                // Aktualizujemy pozycję bazową tylko wtedy, gdy dokładność jest dobra
-                if (accuracy <= 35) {
+                if (accuracy <= 30) {
                     lastPosition = position;
                 }
             }, () => {
@@ -456,7 +459,7 @@
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.getElementById('url');
         a.href = url;
         a.download = `kopia_zapasowa_${Date.now()}.json`;
         document.body.appendChild(a);
