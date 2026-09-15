@@ -207,9 +207,10 @@
     let timerInterval = null;
     let events = [];
 
-    // Obliczanie km z licznika
     document.getElementById('startOdo').addEventListener('input', calculateOdo);
     document.getElementById('endOdo').addEventListener('input', calculateOdo);
+    document.getElementById('startPlace').addEventListener('input', saveData);
+    document.getElementById('endPlace').addEventListener('input', saveData);
 
     function calculateOdo() {
         const start = parseFloat(document.getElementById('startOdo').value) || 0;
@@ -260,9 +261,8 @@
         document.getElementById('dailyTime').textContent = timeStr;
     }
 
-    // Obliczanie dystansu z GPS (Haversine)
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3; // promień ziemi w metrach
+        const R = 6371e3;
         const f1 = lat1 * Math.PI/180;
         const f2 = lat2 * Math.PI/180;
         const df = (lat2-lat1) * Math.PI/180;
@@ -271,7 +271,7 @@
                   Math.cos(f1) * Math.cos(f2) *
                   Math.sin(dl/2) * Math.sin(dl/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c; // metry
+        return R * c;
     }
 
     function startGPS() {
@@ -282,14 +282,13 @@
                 const speedKmh = speedMs ? (speedMs * 3.6).toFixed(0) : 0;
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
-                // Akumulacja dystansu jeśli prędkość > 2km/h i dobra dokładność
                 if (lastPosition && speedKmh > 2 && position.coords.accuracy < 50) {
                     const dist = calculateDistance(
                         lastPosition.coords.latitude, lastPosition.coords.longitude,
                         position.coords.latitude, position.coords.longitude
                     );
-                    if(dist < 500) { // Filtr błędów i skoków
-                        totalGpsDistance += (dist / 1000); // dodaj km
+                    if(dist < 500) {
+                        totalGpsDistance += (dist / 1000);
                         document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
                     }
                 }
@@ -310,7 +309,7 @@
     function logEvent(type) {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const logContent = document.getElementById('logContent');
-        if (events.length === 0) logContent.innerHTML = ''; // Usuń "Brak zdarzeń"
+        if (events.length === 0) logContent.innerHTML = '';
         
         const entry = `<div class="log-entry"><span class="log-time">[${time}]</span> ${type}</div>`;
         logContent.innerHTML += entry;
@@ -323,10 +322,64 @@
     function finishWork() {
         if (isRunning) toggleRoute();
         logEvent("Zakończenie pracy");
-        alert("Zapisano raport końcowy! Zrób eksport CSV/JSON.");
+        alert("Zakończono pracę! Możesz teraz pobrać raport CSV.");
     }
 
-    // Zapis i odczyt (Offline PWA)
+    // Prawdziwy eksport CSV
+    function downloadCSV() {
+        let csvContent = "\uFEFFRaport z trasy - Kierowca App Pro\n";
+        const startPlace = document.getElementById('startPlace').value || "Brak";
+        const endPlace = document.getElementById('endPlace').value || "Brak";
+        const startOdo = document.getElementById('startOdo').value || "0";
+        const endOdo = document.getElementById('endOdo').value || "0";
+        const gpsKm = totalGpsDistance.toFixed(2);
+
+        csvContent += `Skąd;,${startPlace}\n`;
+        csvContent += `Dokąd;,${endPlace}\n`;
+        csvContent += `Licznik początkowy (km);,${startOdo}\n`;
+        csvContent += `Licznik końcowy (km);,${endOdo}\n`;
+        csvContent += `Dystans GPS (km);,${gpsKm}\n\n`;
+        csvContent += `Czas,Zdarzenie\n`;
+
+        if (events.length === 0) {
+            csvContent += `Brak zarejestrowanych zdarzeń\n`;
+        } else {
+            events.forEach(e => {
+                csvContent += `${e.time},"${e.type}"\n`;
+            });
+        }
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `raport_trasy_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Prawdziwy eksport JSON
+    function downloadJSON() {
+        const data = {
+            startPlace: document.getElementById('startPlace').value,
+            endPlace: document.getElementById('endPlace').value,
+            startOdo: document.getElementById('startOdo').value,
+            endOdo: document.getElementById('endOdo').value,
+            gpsKm: totalGpsDistance,
+            events: events,
+            exportDate: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `kopia_zapasowa_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     function saveData() {
         const data = {
             startOdo: document.getElementById('startOdo').value,
@@ -370,11 +423,6 @@
         }
     }
 
-    // Dummy export functions
-    function downloadCSV() { alert("Eksport CSV gotowy (do pobrania)."); }
-    function downloadJSON() { alert("Zapisano plik JSON z historią."); }
-
-    // Przy starcie
     window.onload = loadData;
 </script>
 
