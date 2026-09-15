@@ -194,6 +194,7 @@
 
 <script>
     let isRunning = false;
+    let isDriving = false;
     let watchId = null;
     let totalGpsDistance = 0;
     let lastPosition = null;
@@ -230,6 +231,7 @@
             btn.style.backgroundColor = "#d32f2f";
             status.textContent = "W trasie";
             status.style.color = "#4caf50";
+            isDriving = true;
             timerInterval = setInterval(updateTimers, 1000);
             startGPS();
             logEvent("Start trasy");
@@ -238,6 +240,7 @@
             btn.style.backgroundColor = "#4caf50";
             status.textContent = "Stop";
             status.style.color = "#ff9800";
+            isDriving = false;
             clearInterval(timerInterval);
             stopGPS();
             logEvent("Koniec trasy");
@@ -246,9 +249,13 @@
     }
 
     function updateTimers() {
-        totalDriveSeconds++;
-        continuousSeconds++;
-        dailySeconds++;
+        if (isRunning) {
+            dailySeconds++; // Dzienny czas pracy leci cały czas, gdy praca jest włączona
+            if (isDriving) {
+                totalDriveSeconds++;
+                continuousSeconds++;
+            }
+        }
         
         displayTime('driveTime', totalDriveSeconds);
         displayTime('continuousTime', continuousSeconds);
@@ -284,6 +291,11 @@
                 const speedKmh = speedMs ? (speedMs * 3.6).toFixed(0) : 0;
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
+                // Jeśli pojazd jedzie powyżej 3 km/h, automatycznie wznawiamy czas jazdy
+                if (speedKmh > 3 && position.coords.accuracy < 50) {
+                    isDriving = true;
+                }
+
                 if (lastPosition && speedKmh > 2 && position.coords.accuracy < 50) {
                     const dist = calculateDistance(
                         lastPosition.coords.latitude, lastPosition.coords.longitude,
@@ -311,6 +323,11 @@
     function logEvent(type) {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
+        // Zatrzymujemy czas jazdy i ciągłej jazdy na czas wykonywania czynności (tankowanie, załadunek itp.)
+        if (type !== 'Start trasy' && type !== 'Koniec trasy') {
+            isDriving = false;
+        }
+
         if (type === 'Pauza') {
             continuousSeconds = 0;
             displayTime('continuousTime', continuousSeconds);
