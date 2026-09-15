@@ -127,22 +127,22 @@
     <div class="section-title">TRASA</div>
     <div class="input-group">
         <label>Skąd (Załadunek / Start):</label>
-        <input type="text" id="startPlace" placeholder="np. Poznań" oninput="saveData()">
+        <input type="text" id="startPlace" placeholder="np. Poznań">
     </div>
     <div class="input-group">
         <label>Dokąd (Rozładunek / Cel):</label>
-        <input type="text" id="endPlace" placeholder="np. Berlin" oninput="saveData()">
+        <input type="text" id="endPlace" placeholder="np. Berlin">
     </div>
 
     <div class="section-title">LICZNIK KILOMETRÓW</div>
     <div class="grid-2">
         <div class="input-group">
             <label>Początkowy (km):</label>
-            <input type="number" id="startOdo" placeholder="np. 150000" oninput="calculateOdo()">
+            <input type="number" id="startOdo" placeholder="np. 150000">
         </div>
         <div class="input-group">
             <label>Końcowy (km):</label>
-            <input type="number" id="endOdo" placeholder="np. 150350" oninput="calculateOdo()">
+            <input type="number" id="endOdo" placeholder="np. 150350">
         </div>
     </div>
 
@@ -206,6 +206,24 @@
     let timerInterval = null;
     let events = [];
 
+    // Nasłuch zmian w polach formularza do natywnego autozapisu
+    document.addEventListener("DOMContentLoaded", () => {
+        loadData();
+        
+        ['startPlace', 'endPlace', 'startOdo', 'endOdo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => {
+                    if (id === 'startOdo' || id === 'endOdo') {
+                        calculateOdo();
+                    } else {
+                        saveData();
+                    }
+                });
+            }
+        });
+    });
+
     function calculateOdo() {
         const start = parseFloat(document.getElementById('startOdo').value) || 0;
         const end = parseFloat(document.getElementById('endOdo').value) || 0;
@@ -257,24 +275,15 @@
         }
 
         const status = document.getElementById('appStatus');
+        currentMode = type;
         
-        if (type === 'Tankowanie') {
-            currentMode = 'Tankowanie';
-            status.textContent = "Tankowanie";
-            status.style.color = "#ff9800";
-        } else if (type === 'Załadunek') {
-            currentMode = 'Załadunek';
-            status.textContent = "Załadunek";
-            status.style.color = "#ff9800";
-        } else if (type === 'Rozładunek') {
-            currentMode = 'Rozładunek';
-            status.textContent = "Rozładunek";
-            status.style.color = "#ff9800";
-        } else if (type === 'Pauza') {
-            currentMode = 'Pauza';
+        if (type === 'Pauza') {
             status.textContent = "Pauza";
             status.style.color = "#2196f3";
             continuousSeconds = 0; 
+        } else {
+            status.textContent = type;
+            status.style.color = "#ff9800";
         }
 
         logEvent(type);
@@ -326,49 +335,50 @@
                 const lon = position.coords.longitude;
                 const accuracy = position.coords.accuracy;
 
+                // Odrzucamy niedokładny sygnał GPS (> 30 metrów błędu)
+                if (accuracy > 30) {
+                    document.getElementById('gpsSpeed').textContent = "0 km/h (Słaby sygnał)";
+                    return;
+                }
+
                 let speedKmh = 0;
 
                 if (lastPosition) {
                     const timeDiffSec = (currentTimestamp - lastPosition.timestamp) / 1000;
                     if (timeDiffSec > 0) {
                         const distMeters = calculateDistance(lastPosition.coords.latitude, lastPosition.coords.longitude, lat, lon);
-                        if (distMeters >= 15) { // Ignorujemy skoki poniżej 15 metrów
-                            const speedMs = distMeters / timeDiffSec;
-                            speedKmh = Math.round(speedMs * 3.6);
-                        }
+                        const speedMs = distMeters / timeDiffSec;
+                        speedKmh = Math.round(speedMs * 3.6);
                     }
                 }
 
-                // Filtr postoju: poniżej 5 km/h lub słaba dokładność (>25m) to bezwzględnie 0
-                if (speedKmh < 5 || accuracy > 25) {
+                // Bezwzględny filtr postoju: prędkość poniżej 6 km/h traktowana jako 0 (brak ruchu)
+                if (speedKmh < 6) {
                     speedKmh = 0;
                 }
 
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
-                if (speedKmh >= 5 && currentMode !== 'Pauza' && currentMode !== 'Tankowanie' && currentMode !== 'Załadunek' && currentMode !== 'Rozładunek') {
-                    currentMode = 'Jazda';
+                if (speedKmh >= 6 && currentMode === 'Jazda') {
                     document.getElementById('appStatus').textContent = "W trasie (Jazda)";
                 }
 
-                // Naliczanie dystansu tylko przy realnym ruchu >= 15 metrów i prędkości >= 5 km/h
-                if (lastPosition && speedKmh >= 5) {
+                // Liczymy dystans tylko przy realnym ruchu >= 10 metrów i prędkości >= 6 km/h
+                if (lastPosition && speedKmh >= 6 && isRunning && currentMode === 'Jazda') {
                     const dist = calculateDistance(
                         lastPosition.coords.latitude, lastPosition.coords.longitude,
                         lat, lon
                     );
-                    if (dist >= 15 && dist < 1000) {
+                    if (dist >= 10 && dist < 1000) {
                         totalGpsDistance += (dist / 1000);
                         document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
                         saveData();
                     }
                 }
 
-                if (accuracy <= 25 && speedKmh >= 5) {
-                    lastPosition = position;
-                } else if (!lastPosition) {
-                    lastPosition = position;
-                }
+                // Aktualizujemy pozycję bazową
+                lastPosition = position;
+
             }, () => {
                 document.getElementById('gpsStatus').textContent = "GPS: Błąd/Brak sygnału";
             }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
@@ -529,8 +539,6 @@
             location.reload();
         }
     }
-
-    window.onload = loadData;
 </script>
 
 </body>
