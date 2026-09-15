@@ -250,7 +250,7 @@
 
     function updateTimers() {
         if (isRunning) {
-            dailySeconds++; // Dzienny czas pracy leci cały czas, gdy praca jest włączona
+            dailySeconds++; // Dzienny czas pracy leci cały czas podczas trasy/pracy
             if (isDriving) {
                 totalDriveSeconds++;
                 continuousSeconds++;
@@ -291,8 +291,8 @@
                 const speedKmh = speedMs ? (speedMs * 3.6).toFixed(0) : 0;
                 document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
 
-                // Jeśli pojazd jedzie powyżej 3 km/h, automatycznie wznawiamy czas jazdy
-                if (speedKmh > 3 && position.coords.accuracy < 50) {
+                // Wznów jazdę automatycznie tylko wtedy, gdy prędkość przekroczy 5 km/h
+                if (speedKmh > 5 && position.coords.accuracy < 50) {
                     isDriving = true;
                 }
 
@@ -323,8 +323,8 @@
     function logEvent(type) {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        // Zatrzymujemy czas jazdy i ciągłej jazdy na czas wykonywania czynności (tankowanie, załadunek itp.)
-        if (type !== 'Start trasy' && type !== 'Koniec trasy') {
+        // Natychmiastowe zatrzymanie czasu jazdy po kliknięciu akcji (Tankowanie, Załadunek itp.)
+        if (type !== 'Start trasy') {
             isDriving = false;
         }
 
