@@ -2,25 +2,22 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kierowca App Pro</title>
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ewidencja Czasu Pracy - Kierowca</title>
     <style>
         :root {
             --bg-color: #121212;
-            --box-bg: #222222;
+            --box-bg: #1e1e1e;
             --text-main: #ffffff;
-            --text-muted: #888888;
+            --text-muted: #aaaaaa;
             --accent-orange: #ff9800;
             --accent-green: #4caf50;
-            --accent-blue: #2196f3;
             --accent-red: #f44336;
-            --accent-purple: #9c27b0;
             --border-color: #333333;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
@@ -30,513 +27,259 @@
         }
 
         .container { width: 100%; max-width: 500px; }
-        h2 { text-align: center; margin: 10px 0 20px 0; font-size: 22px; }
+        h2 { text-align: center; margin: 10px 0 20px 0; font-size: 20px; color: var(--accent-orange); }
 
-        .status-card {
+        .card {
             background: var(--box-bg);
             padding: 15px;
             border-radius: 10px;
-            text-align: center;
-            margin-bottom: 20px;
             border: 1px solid var(--border-color);
+            margin-bottom: 15px;
         }
-        .status-card .state { font-size: 16px; margin-bottom: 5px; }
-        .status-card .state span { color: var(--accent-orange); font-weight: bold; }
-        .status-card .gps { font-size: 12px; color: var(--text-muted); }
 
         .section-title {
             font-size: 11px;
             text-transform: uppercase;
             color: var(--text-muted);
-            letter-spacing: 1px;
-            margin: 15px 0 5px 5px;
+            letter-spacing: 1px; już
+            margin-bottom: 10px;
+            font-weight: bold;
         }
 
         .input-group { margin-bottom: 10px; }
-        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; margin-left: 5px; }
-        input {
+        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        
+        input, select {
             width: 100%;
-            padding: 12px;
-            background: var(--box-bg);
+            padding: 10px;
+            background: #2a2a2a;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 6px;
             color: var(--text-main);
             box-sizing: border-box;
             font-size: 14px;
         }
-        input::placeholder { color: #555; }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-
-        .metric-box {
-            background: var(--box-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px 5px;
-            text-align: center;
-        }
-        .metric-box label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
-        .metric-box .val { font-size: 16px; font-weight: bold; }
-        .val-green { color: var(--accent-green); }
-        .val-blue { color: var(--accent-blue); }
-        .val-orange { color: var(--accent-orange); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
         .btn {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             border: none;
-            border-radius: 8px;
-            font-size: 15px;
+            border-radius: 6px;
+            font-size: 14px;
             font-weight: bold;
             color: white;
             cursor: pointer;
-            margin-bottom: 10px;
+            margin-top: 5px;
         }
-        .btn-start { background-color: var(--accent-green); margin-top: 10px; }
-        .btn-action { background-color: var(--accent-orange); }
-        .btn-stop { background-color: var(--accent-red); margin-top: 5px; }
-        .btn-csv { background-color: #0277bd; }
-        .btn-json { background-color: var(--accent-purple); }
+        .btn-add { background-color: var(--accent-green); }
+        .btn-print { background-color: #0277bd; margin-bottom: 8px; }
         .btn-clear { background-color: #424242; color: #ccc; }
 
-        .log-box {
-            background: var(--box-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            height: 100px;
+        .entry-list {
+            max-height: 250px;
             overflow-y: auto;
-            font-size: 12px;
-            color: var(--text-muted);
+        }
+
+        .entry-item {
+            background: #262626;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--accent-orange);
+            font-size: 13px;
+            position: relative;
+        }
+        .entry-item.Jazda { border-left-color: var(--accent-green); }
+        .entry-item.Pauza { border-left-color: #2196f3; }
+        .entry-item.Inna { border-left-color: var(--accent-orange); }
+
+        .entry-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
+        .entry-details { color: var(--text-muted); font-size: 12px; }
+        
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .summary-box {
+            background: #1a252c;
+            border: 1px solid #1e3d59;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
             margin-bottom: 15px;
         }
-        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-        .log-time { color: var(--text-main); font-weight: bold; margin-right: 5px; }
+        .summary-box span { font-weight: bold; color: var(--accent-orange); }
+
+        /* Styl do wydruku na czysto */
+        @media print {
+            body { background: white; color: black; }
+            .card, .container { width: 100%; max-width: none; border: none; background: white; }
+            input, select, .btn, .delete-btn { display: none; }
+            .entry-item { background: #f9f9f9; border: 1px solid #ddd; color: black; }
+            .entry-details { color: #555; }
+            h2 { color: black; }
+            .summary-box { background: #eee; border: 1px solid #ccc; color: black; }
+            .summary-box span { color: black; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Kierowca App Pro</h2>
-    
-    <div class="status-card">
-        <div class="state">Stan: <span id="appStatus">Stop</span></div>
-        <div class="gps" id="gpsStatus">GPS: Gotowy</div>
-    </div>
+    <h2>Ewidencja Czasu Pracy</h2>
 
-    <div class="section-title">TRASA</div>
-    <div class="input-group">
-        <label>Skąd (Załadunek / Start):</label>
-        <input type="text" id="startPlace" placeholder="np. Poznań">
-    </div>
-    <div class="input-group">
-        <label>Dokąd (Rozładunek / Cel):</label>
-        <input type="text" id="endPlace" placeholder="np. Berlin">
-    </div>
+    <div class="card">
+        <div class="section-title">Dodaj wpis</div>
+        
+        <div class="grid-2">
+            <div class="input-group">
+                <label>Data:</label>
+                <input type="date" id="entryDate">
+            </div>
+            <div class="input-group">
+                <label>Rodzaj wpisu:</label>
+                <select id="entryType">
+                    <option value="Jazda">Jazda / Trasa</option>
+                    <option value="Praca">Inna praca</option>
+                    <option value="Pauza">Pauza / Odpoczynek</option>
+                    <option value="Gotowość">Dyspozycja / Oczekiwanie</option>
+                </select>
+            </div>
+        </div>
 
-    <div class="section-title">LICZNIK KILOMETRÓW</div>
-    <div class="grid-2">
+        <div class="grid-2">
+            <div class="input-group">
+                <label>Godzina od:</label>
+                <input type="time" id="timeFrom">
+            </div>
+            <div class="input-group">
+                <label>Godzina do:</label>
+                <input type="time" id="timeTo">
+            </div>
+        </div>
+
         <div class="input-group">
-            <label>Początkowy (km):</label>
-            <input type="number" id="startOdo" placeholder="np. 150000">
+            <label>Opis (np. Trasa Poznań - Kraków, załadunek kontenera):</label>
+            <input type="text" id="entryDesc" placeholder="Trasa / uwagi...">
         </div>
-        <div class="input-group">
-            <label>Końcowy (km):</label>
-            <input type="number" id="endOdo" placeholder="np. 150350">
+
+        <button class="btn btn-add" onclick="addEntry()">Zapisz wpis</button>
+    </div>
+
+    <div class="summary-box" id="summaryBox">
+        Suma wpisów w historii: <span>0</span>
+    </div>
+
+    <button class="btn btn-print" onclick="window.print()">🖨️ Drukuj / Zapisz raport (PDF)</button>
+
+    <div class="card">
+        <div class="section-title">Rejestr wpisów</div>
+        <div class="entry-list" id="entryList">
+            <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px;">Brak wpisów</div>
         </div>
     </div>
 
-    <div class="grid-2">
-        <div class="metric-box">
-            <label>km z licznika</label>
-            <div class="val val-green" id="calcKm">0.00 km</div>
-        </div>
-        <div class="metric-box">
-            <label>km z GPS</label>
-            <div class="val val-blue" id="gpsKm">0.00 km</div>
-        </div>
-        <div class="metric-box">
-            <label>Prędkość GPS</label>
-            <div class="val val-green" id="gpsSpeed">0 km/h</div>
-        </div>
-        <div class="metric-box">
-            <label>Czas jazdy (Trasa)</label>
-            <div class="val val-green" id="driveTime">0:00:00</div>
-        </div>
-        <div class="metric-box">
-            <label>Ciągła jazda</label>
-            <div class="val val-orange" id="continuousTime">0:00:00</div>
-        </div>
-        <div class="metric-box">
-            <label>Dzienny czas pracy</label>
-            <div class="val val-green" id="dailyTime">0:00:00</div>
-        </div>
-    </div>
-
-    <button class="btn btn-start" id="mainBtn" onclick="toggleRoute()">Start Trasy</button>
-
-    <div class="grid-2">
-        <button class="btn btn-action" onclick="setActivity('Tankowanie')">Tankowanie</button>
-        <button class="btn btn-action" onclick="setActivity('Załadunek')">Załadunek</button>
-        <button class="btn btn-action" onclick="setActivity('Rozładunek')">Rozładunek</button>
-        <button class="btn btn-action" onclick="setActivity('Pauza')">Pauza</button>
-    </div>
-
-    <button class="btn btn-stop" onclick="finishWork()">Zakończ Pracę</button>
-
-    <div class="section-title">DZIENNIK ZDARZEŃ</div>
-    <div class="log-box" id="logContent">Brak zdarzeń</div>
-
-    <button class="btn btn-csv" onclick="downloadReportTxt()">Pobierz raport jako plik (.txt)</button>
-    <button class="btn btn-json" onclick="downloadJSON()">Zapisz kopię zapasową (JSON)</button>
-    <button class="btn btn-clear" onclick="clearData()">Wyczyść historię i dane</button>
+    <button class="btn btn-clear" onclick="clearAll()">Wyczyść wszystkie dane</button>
 </div>
 
 <script>
-    let isRunning = false;
-    let currentMode = 'Stop'; 
-    let watchId = null;
-    let totalGpsDistance = 0;
-    let lastPosition = null;
-    
-    let totalDriveSeconds = 0;
-    let continuousSeconds = 0;
-    let dailySeconds = 0;
-    
-    let timerInterval = null;
-    let events = [];
+    let entries = [];
 
-    // Nasłuch zmian w polach formularza do natywnego autozapisu
     document.addEventListener("DOMContentLoaded", () => {
-        loadData();
-        
-        ['startPlace', 'endPlace', 'startOdo', 'endOdo'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('input', () => {
-                    if (id === 'startOdo' || id === 'endOdo') {
-                        calculateOdo();
-                    } else {
-                        saveData();
-                    }
-                });
-            }
-        });
+        // Ustaw dzisiejszą datę domyślnie
+        document.getElementById('entryDate').valueAsDate = new Date();
+        loadEntries();
     });
 
-    function calculateOdo() {
-        const start = parseFloat(document.getElementById('startOdo').value) || 0;
-        const end = parseFloat(document.getElementById('endOdo').value) || 0;
-        const calcBox = document.getElementById('calcKm');
-        if (end > start) {
-            calcBox.textContent = (end - start).toFixed(2) + " km";
-        } else {
-            calcBox.textContent = "0.00 km";
-        }
-        saveData();
-    }
+    function addEntry() {
+        const date = document.getElementById('entryDate').value;
+        const type = document.getElementById('entryType').value;
+        const timeFrom = document.getElementById('timeFrom').value;
+        const timeTo = document.getElementById('timeTo').value;
+        const desc = document.getElementById('entryDesc').value || "Brak opisu";
 
-    function toggleRoute() {
-        isRunning = !isRunning;
-        const btn = document.getElementById('mainBtn');
-        const status = document.getElementById('appStatus');
-        
-        if (isRunning) {
-            totalGpsDistance = 0;
-            document.getElementById('gpsKm').textContent = "0.00 km";
-            lastPosition = null;
-
-            btn.textContent = "Zatrzymaj Trasę";
-            btn.style.backgroundColor = "#d32f2f";
-            status.textContent = "W trasie (Jazda)";
-            status.style.color = "#4caf50";
-            currentMode = 'Jazda';
-            if(!timerInterval) timerInterval = setInterval(updateTimers, 1000);
-            startGPS();
-            logEvent("Start trasy");
-        } else {
-            btn.textContent = "Start Trasy";
-            btn.style.backgroundColor = "#4caf50";
-            status.textContent = "Stop";
-            status.style.color = "#ff9800";
-            currentMode = 'Stop';
-            clearInterval(timerInterval);
-            timerInterval = null;
-            stopGPS();
-            logEvent("Koniec trasy");
-        }
-        saveData();
-    }
-
-    function setActivity(type) {
-        if (!isRunning) {
-            alert("Najpierw uruchom trasę!");
+        if (!date || !timeFrom || !timeTo) {
+            alert("Uzupełnij datę oraz godziny od-do!");
             return;
         }
 
-        const status = document.getElementById('appStatus');
-        currentMode = type;
-        
-        if (type === 'Pauza') {
-            status.textContent = "Pauza";
-            status.style.color = "#2196f3";
-            continuousSeconds = 0; 
-        } else {
-            status.textContent = type;
-            status.style.color = "#ff9800";
-        }
-
-        logEvent(type);
-        saveData();
-    }
-
-    function updateTimers() {
-        if (isRunning) {
-            dailySeconds++; 
-
-            if (currentMode === 'Jazda') {
-                totalDriveSeconds++;
-                continuousSeconds++;
-            }
-        }
-        
-        displayTime('driveTime', totalDriveSeconds);
-        displayTime('continuousTime', continuousSeconds);
-        displayTime('dailyTime', dailySeconds);
-        saveData();
-    }
-
-    function displayTime(elementId, totalSeconds) {
-        const hrs = Math.floor(totalSeconds / 3600);
-        const mins = Math.floor((totalSeconds % 3600) / 60);
-        const secs = totalSeconds % 60;
-        document.getElementById(elementId).textContent = `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3;
-        const f1 = lat1 * Math.PI/180;
-        const f2 = lat2 * Math.PI/180;
-        const df = (lat2-lat1) * Math.PI/180;
-        const dl = (lon2-lon1) * Math.PI/180;
-        const a = Math.sin(df/2) * Math.sin(df/2) +
-                  Math.cos(f1) * Math.cos(f2) *
-                  Math.sin(dl/2) * Math.sin(dl/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-    }
-
-    function startGPS() {
-        if ("geolocation" in navigator) {
-            document.getElementById('gpsStatus').textContent = "GPS: Aktywny";
-            watchId = navigator.geolocation.watchPosition(position => {
-                const currentTimestamp = position.timestamp;
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                const accuracy = position.coords.accuracy;
-
-                // Odrzucamy niedokładny sygnał GPS (> 30 metrów błędu)
-                if (accuracy > 30) {
-                    document.getElementById('gpsSpeed').textContent = "0 km/h (Słaby sygnał)";
-                    return;
-                }
-
-                let speedKmh = 0;
-
-                if (lastPosition) {
-                    const timeDiffSec = (currentTimestamp - lastPosition.timestamp) / 1000;
-                    if (timeDiffSec > 0) {
-                        const distMeters = calculateDistance(lastPosition.coords.latitude, lastPosition.coords.longitude, lat, lon);
-                        const speedMs = distMeters / timeDiffSec;
-                        speedKmh = Math.round(speedMs * 3.6);
-                    }
-                }
-
-                // Bezwzględny filtr postoju: prędkość poniżej 6 km/h traktowana jako 0 (brak ruchu)
-                if (speedKmh < 6) {
-                    speedKmh = 0;
-                }
-
-                document.getElementById('gpsSpeed').textContent = speedKmh + " km/h";
-
-                if (speedKmh >= 6 && currentMode === 'Jazda') {
-                    document.getElementById('appStatus').textContent = "W trasie (Jazda)";
-                }
-
-                // Liczymy dystans tylko przy realnym ruchu >= 10 metrów i prędkości >= 6 km/h
-                if (lastPosition && speedKmh >= 6 && isRunning && currentMode === 'Jazda') {
-                    const dist = calculateDistance(
-                        lastPosition.coords.latitude, lastPosition.coords.longitude,
-                        lat, lon
-                    );
-                    if (dist >= 10 && dist < 1000) {
-                        totalGpsDistance += (dist / 1000);
-                        document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
-                        saveData();
-                    }
-                }
-
-                // Aktualizujemy pozycję bazową
-                lastPosition = position;
-
-            }, () => {
-                document.getElementById('gpsStatus').textContent = "GPS: Błąd/Brak sygnału";
-            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
-        }
-    }
-
-    function stopGPS() {
-        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-        document.getElementById('gpsSpeed').textContent = "0 km/h";
-        document.getElementById('gpsStatus').textContent = "GPS: Gotowy";
-        lastPosition = null;
-    }
-
-    function logEvent(type) {
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        const logContent = document.getElementById('logContent');
-        if (events.length === 0) logContent.innerHTML = '';
-        
-        logContent.innerHTML += `<div class="log-entry"><span class="log-time">[${time}]</span> ${type}</div>`;
-        logContent.scrollTop = logContent.scrollHeight;
-        
-        events.push({ time, type });
-        saveData();
-    }
-
-    function finishWork() {
-        if (isRunning) toggleRoute();
-        logEvent("Zakończenie pracy");
-        downloadReportTxt();
-    }
-
-    function downloadReportTxt() {
-        const startPlace = document.getElementById('startPlace').value || "Brak";
-        const endPlace = document.getElementById('endPlace').value || "Brak";
-        const startOdo = document.getElementById('startOdo').value || "0";
-        const endOdo = document.getElementById('endOdo').value || "0";
-        const gpsKm = totalGpsDistance.toFixed(2);
-        const calcKm = document.getElementById('calcKm').textContent;
-        const driveTime = document.getElementById('driveTime').textContent;
-        const dailyTime = document.getElementById('dailyTime').textContent;
-
-        let reportText = `🚚 RAPORT Z TRASY - KIEROWCA APP\n`;
-        reportText += `--------------------------------\n`;
-        reportText += `📍 Skąd: ${startPlace}\n`;
-        reportText += `🏁 Dokąd: ${endPlace}\n`;
-        reportText += `🔢 Start licznik: ${startOdo} km\n`;
-        reportText += `🔢 Koniec licznik: ${endOdo} km\n`;
-        reportText += `📏 Dystans z licznika: ${calcKm}\n`;
-        reportText += `🛰️ Dystans z GPS: ${gpsKm} km\n`;
-        reportText += `⏱️ Czas jazdy: ${driveTime}\n`;
-        reportText += `⏱️ Dzienny czas pracy: ${dailyTime}\n\n`;
-        reportText += `📋 ZDARZENIA:\n`;
-
-        if (events.length === 0) {
-            reportText += `Brak zdarzeń\n`;
-        } else {
-            events.forEach(e => {
-                reportText += `[${e.time}] ${e.type}\n`;
-            });
-        }
-
-        const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `raport_trasy_${Date.now()}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
-    }
-
-    function downloadJSON() {
-        const data = {
-            startPlace: document.getElementById('startPlace').value,
-            endPlace: document.getElementById('endPlace').value,
-            startOdo: document.getElementById('startOdo').value,
-            endOdo: document.getElementById('endOdo').value,
-            gpsKm: totalGpsDistance,
-            totalDriveSeconds: totalDriveSeconds,
-            continuousSeconds: continuousSeconds,
-            dailySeconds: dailySeconds,
-            events: events,
-            exportDate: new Date().toISOString()
+        const newEntry = {
+            id: Date.now(),
+            date,
+            type,
+            timeFrom,
+            timeTo,
+            desc
         };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `kopia_zapasowa_${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
+
+        entries.unshift(newEntry); // Dodaj na początek
+        saveAndRender();
+        
+        // Wyczyść opis
+        document.getElementById('entryDesc').value = '';
     }
 
-    function saveData() {
-        const data = {
-            startOdo: document.getElementById('startOdo').value,
-            endOdo: document.getElementById('endOdo').value,
-            startPlace: document.getElementById('startPlace').value,
-            endPlace: document.getElementById('endPlace').value,
-            gpsKm: totalGpsDistance,
-            totalDriveSeconds: totalDriveSeconds,
-            continuousSeconds: continuousSeconds,
-            dailySeconds: dailySeconds,
-            events: events,
-            currentMode: currentMode,
-            isRunning: isRunning
-        };
-        localStorage.setItem('kierowcaData', JSON.stringify(data));
+    function deleteEntry(id) {
+        entries = entries.filter(e => e.id !== id);
+        saveAndRender();
     }
 
-    function loadData() {
-        const saved = JSON.parse(localStorage.getItem('kierowcaData'));
+    function saveAndRender() {
+        localStorage.setItem('kierowcaManualData', JSON.stringify(entries));
+        renderList();
+    }
+
+    function loadEntries() {
+        const saved = localStorage.getItem('kierowcaManualData');
         if (saved) {
-            if(saved.startOdo) document.getElementById('startOdo').value = saved.startOdo;
-            if(saved.endOdo) document.getElementById('endOdo').value = saved.endOdo;
-            if(saved.startPlace) document.getElementById('startPlace').value = saved.startPlace;
-            if(saved.endPlace) document.getElementById('endPlace').value = saved.endPlace;
-            
-            if (saved.isRunning) {
-                totalGpsDistance = saved.gpsKm || 0;
-            } else {
-                totalGpsDistance = 0;
-            }
-            document.getElementById('gpsKm').textContent = totalGpsDistance.toFixed(2) + " km";
-            calculateOdo();
-
-            totalDriveSeconds = saved.totalDriveSeconds || 0;
-            continuousSeconds = saved.continuousSeconds || 0;
-            dailySeconds = saved.dailySeconds || 0;
-
-            displayTime('driveTime', totalDriveSeconds);
-            displayTime('continuousTime', continuousSeconds);
-            displayTime('dailyTime', dailySeconds);
-
-            if (saved.events && saved.events.length > 0) {
-                events = saved.events;
-                const logContent = document.getElementById('logContent');
-                logContent.innerHTML = '';
-                events.forEach(e => {
-                    logContent.innerHTML += `<div class="log-entry"><span class="log-time">[${e.time}]</span> ${e.type}</div>`;
-                });
-                logContent.scrollTop = logContent.scrollHeight;
-            }
+            entries = JSON.parse(saved);
+            renderList();
         }
     }
 
-    function clearData() {
-        if(confirm("Na pewno wyczyścić całą historię?")) {
-            localStorage.removeItem('kierowcaData');
-            location.reload();
+    function renderList() {
+        const listContainer = document.getElementById('entryList');
+        const summaryBox = document.getElementById('summaryBox');
+        
+        summaryBox.innerHTML = `Liczba zarejestrowanych wpisów: <span>${entries.length}</span>`;
+
+        if (entries.length === 0) {
+            listContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px;">Brak wpisów</div>`;
+            return;
+        }
+
+        listContainer.innerHTML = '';
+        entries.forEach(e => {
+            const item = document.createElement('div');
+            item.className = `entry-item ${e.type}`;
+            item.innerHTML = `
+                <button class="delete-btn" onclick="deleteEntry(${e.id})">×</button>
+                <div class="entry-header">
+                    <span>${e.date} (${e.type})</span>
+                    <span>${e.timeFrom} - ${e.timeTo}</span>
+                </div>
+                <div class="entry-details">${e.desc}</div>
+            `;
+            listContainer.appendChild(item);
+        });
+    }
+
+    function clearAll() {
+        if(confirm("Na pewno usunąć całą historię ewidencji?")) {
+            entries = [];
+            localStorage.removeItem('kierowcaManualData');
+            renderList();
         }
     }
 </script>
