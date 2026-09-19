@@ -3,285 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ewidencja Czasu Pracy - Kierowca</title>
+    <title>Raport Kierowcy - Podsumowanie Miesiąca</title>
     <style>
-        :root {
-            --bg-color: #121212;
-            --box-bg: #1e1e1e;
-            --text-main: #ffffff;
-            --text-muted: #aaaaaa;
-            --accent-orange: #ff9800;
-            --accent-green: #4caf50;
-            --accent-red: #f44336;
-            --border-color: #333333;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 10px;
-            display: flex;
-            justify-content: center;
+            padding: 20px;
+            background-color: #f4f6f9;
+            color: #333;
         }
-
-        .container { width: 100%; max-width: 500px; }
-        h2 { text-align: center; margin: 10px 0 20px 0; font-size: 20px; color: var(--accent-orange); }
-
-        .card {
-            background: var(--box-bg);
-            padding: 15px;
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
             border-radius: 10px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-
-        .section-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            letter-spacing: 1px; już
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
-        .input-group { margin-bottom: 10px; }
-        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
-        
-        input, select {
-            width: 100%;
-            padding: 10px;
-            background: #2a2a2a;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-main);
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            margin-top: 5px;
-        }
-        .btn-add { background-color: var(--accent-green); }
-        .btn-print { background-color: #0277bd; margin-bottom: 8px; }
-        .btn-clear { background-color: #424242; color: #ccc; }
-
-        .entry-list {
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .entry-item {
-            background: #262626;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            border-left: 4px solid var(--accent-orange);
-            font-size: 13px;
-            position: relative;
-        }
-        .entry-item.Jazda { border-left-color: var(--accent-green); }
-        .entry-item.Pauza { border-left-color: #2196f3; }
-        .entry-item.Inna { border-left-color: var(--accent-orange); }
-
-        .entry-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
-        .entry-details { color: var(--text-muted); font-size: 12px; }
-        
-        .delete-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: none;
-            border: none;
-            color: var(--accent-red);
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .summary-box {
-            background: #1a252c;
-            border: 1px solid #1e3d59;
-            padding: 12px;
-            border-radius: 8px;
+        h1 {
             text-align: center;
-            font-size: 14px;
-            margin-bottom: 15px;
+            color: #2c3e50;
+            margin-bottom: 25px;
         }
-        .summary-box span { font-weight: bold; color: var(--accent-orange); }
-
-        /* Styl do wydruku na czysto */
+        /* Kafelki podsumowania */
+        .summary-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .summary-tile {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            border-radius: 8px;
+            flex: 1;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .summary-title {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .summary-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #212529;
+        }
+        /* Tabela */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        /* Przycisk do wydruku */
+        .print-btn-container {
+            text-align: center;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        /* Styl dedykowany do wydruku */
         @media print {
-            body { background: white; color: black; }
-            .card, .container { width: 100%; max-width: none; border: none; background: white; }
-            input, select, .btn, .delete-btn { display: none; }
-            .entry-item { background: #f9f9f9; border: 1px solid #ddd; color: black; }
-            .entry-details { color: #555; }
-            h2 { color: black; }
-            .summary-box { background: #eee; border: 1px solid #ccc; color: black; }
-            .summary-box span { color: black; }
+            body {
+                background-color: #fff;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            button {
+                display: none;
+            }
+            .summary-tile {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border: 1px solid #ccc;
+            }
+            th {
+                background-color: #333 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Ewidencja Czasu Pracy</h2>
+    <h1>Miesięczny Raport Pracy</h1>
 
-    <div class="card">
-        <div class="section-title">Dodaj wpis</div>
-        
-        <div class="grid-2">
-            <div class="input-group">
-                <label>Data:</label>
-                <input type="date" id="entryDate">
-            </div>
-            <div class="input-group">
-                <label>Rodzaj wpisu:</label>
-                <select id="entryType">
-                    <option value="Jazda">Jazda / Trasa</option>
-                    <option value="Praca">Inna praca</option>
-                    <option value="Pauza">Pauza / Odpoczynek</option>
-                    <option value="Gotowość">Dyspozycja / Oczekiwanie</option>
-                </select>
-            </div>
+    <!-- Kafelki podsumowania -->
+    <div class="summary-container">
+        <div class="summary-tile">
+            <div class="summary-title">Łączny dystans</div>
+            <div id="total-km" class="summary-value">0 km</div>
         </div>
-
-        <div class="grid-2">
-            <div class="input-group">
-                <label>Godzina od:</label>
-                <input type="time" id="timeFrom">
-            </div>
-            <div class="input-group">
-                <label>Godzina do:</label>
-                <input type="time" id="timeTo">
-            </div>
-        </div>
-
-        <div class="input-group">
-            <label>Opis (np. Trasa Poznań - Kraków, załadunek kontenera):</label>
-            <input type="text" id="entryDesc" placeholder="Trasa / uwagi...">
-        </div>
-
-        <button class="btn btn-add" onclick="addEntry()">Zapisz wpis</button>
-    </div>
-
-    <div class="summary-box" id="summaryBox">
-        Suma wpisów w historii: <span>0</span>
-    </div>
-
-    <button class="btn btn-print" onclick="window.print()">🖨️ Drukuj / Zapisz raport (PDF)</button>
-
-    <div class="card">
-        <div class="section-title">Rejestr wpisów</div>
-        <div class="entry-list" id="entryList">
-            <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px;">Brak wpisów</div>
+        <div class="summary-tile">
+            <div class="summary-title">Czas w trasie</div>
+            <div id="total-time" class="summary-value">0h 0m</div>
         </div>
     </div>
 
-    <button class="btn btn-clear" onclick="clearAll()">Wyczyść wszystkie dane</button>
+    <!-- Tabela z wpisami -->
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Trasa / Opis</th>
+                <th>Kilometry (km)</th>
+                <th>Czas w trasie</th>
+            </tr>
+        </thead>
+        <tbody id="entries-table-body">
+            <!-- Tutaj skrypt automatycznie wrzuci dane z pamięci -->
+        </tbody>
+    </table>
+
+    <!-- Przycisk drukowania -->
+    <div class="print-btn-container">
+        <button onclick="window.print()">Drukuj / Zapisz jako PDF</button>
+    </div>
 </div>
 
 <script>
-    let entries = [];
-
-    document.addEventListener("DOMContentLoaded", () => {
-        // Ustaw dzisiejszą datę domyślnie
-        document.getElementById('entryDate').valueAsDate = new Date();
-        loadEntries();
-    });
-
-    function addEntry() {
-        const date = document.getElementById('entryDate').value;
-        const type = document.getElementById('entryType').value;
-        const timeFrom = document.getElementById('timeFrom').value;
-        const timeTo = document.getElementById('timeTo').value;
-        const desc = document.getElementById('entryDesc').value || "Brak opisu";
-
-        if (!date || !timeFrom || !timeTo) {
-            alert("Uzupełnij datę oraz godziny od-do!");
-            return;
-        }
-
-        const newEntry = {
-            id: Date.now(),
-            date,
-            type,
-            timeFrom,
-            timeTo,
-            desc
-        };
-
-        entries.unshift(newEntry); // Dodaj na początek
-        saveAndRender();
+    function loadMonthlyReport() {
+        // Pobieramy dane z localStorage (klucz 'driver_entries' – dopasuj, jeśli u Ciebie nazywa się inaczej)
+        const entries = JSON.parse(localStorage.getItem('driver_entries')) || [];
         
-        // Wyczyść opis
-        document.getElementById('entryDesc').value = '';
-    }
+        const tableBody = document.getElementById('entries-table-body');
+        tableBody.innerHTML = '';
 
-    function deleteEntry(id) {
-        entries = entries.filter(e => e.id !== id);
-        saveAndRender();
-    }
+        let totalKm = 0;
+        let totalMinutes = 0;
 
-    function saveAndRender() {
-        localStorage.setItem('kierowcaManualData', JSON.stringify(entries));
-        renderList();
-    }
-
-    function loadEntries() {
-        const saved = localStorage.getItem('kierowcaManualData');
-        if (saved) {
-            entries = JSON.parse(saved);
-            renderList();
-        }
-    }
-
-    function renderList() {
-        const listContainer = document.getElementById('entryList');
-        const summaryBox = document.getElementById('summaryBox');
-        
-        summaryBox.innerHTML = `Liczba zarejestrowanych wpisów: <span>${entries.length}</span>`;
-
+        // Jeśli brak wpisów, pokazujemy informację w tabeli
         if (entries.length === 0) {
-            listContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px;">Brak wpisów</div>`;
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6c757d;">Brak zapisanego miesiąca w pamięci przeglądarki.</td></tr>';
             return;
         }
 
-        listContainer.innerHTML = '';
-        entries.forEach(e => {
-            const item = document.createElement('div');
-            item.className = `entry-item ${e.type}`;
-            item.innerHTML = `
-                <button class="delete-btn" onclick="deleteEntry(${e.id})">×</button>
-                <div class="entry-header">
-                    <span>${e.date} (${e.type})</span>
-                    <span>${e.timeFrom} - ${e.timeTo}</span>
-                </div>
-                <div class="entry-details">${e.desc}</div>
+        entries.forEach(entry => {
+            const km = parseFloat(entry.km) || 0;
+            const czasStr = entry.czas || '00:00';
+
+            totalKm += km;
+
+            // Przeliczanie czasu (zakładamy format "HH:MM" lub "H:MM")
+            const parts = czasStr.split(':');
+            if (parts.length === 2) {
+                totalMinutes += parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            }
+
+            // Tworzenie wiersza tabeli
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${entry.data || '-'}</td>
+                <td>${entry.trasa || entry.opis || '-'}</td>
+                <td>${km.toLocaleString('pl-PL')} km</td>
+                <td>${czasStr}</td>
             `;
-            listContainer.appendChild(item);
+            tableBody.appendChild(row);
         });
+
+        // Obliczanie całkowitego czasu
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+
+        // Wyświetlanie sum w kafelkach
+        document.getElementById('total-km').innerText = totalKm.toLocaleString('pl-PL') + ' km';
+        document.getElementById('total-time').innerText = `${hours}h ${minutes}m`;
     }
 
-    function clearAll() {
-        if(confirm("Na pewno usunąć całą historię ewidencji?")) {
-            entries = [];
-            localStorage.removeItem('kierowcaManualData');
-            renderList();
-        }
-    }
+    // Uruchomienie funkcji po załadowaniu strony
+    loadMonthlyReport();
 </script>
 
 </body>
