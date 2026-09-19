@@ -13,7 +13,7 @@
             color: #333;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: #fff;
             padding: 25px;
@@ -31,13 +31,13 @@
         /* Formularz */
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr 1fr 1fr;
+            grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
             gap: 10px;
             margin-bottom: 15px;
         }
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .form-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr 1fr;
             }
         }
         .form-group label {
@@ -162,20 +162,24 @@
     <form id="entry-form">
         <div class="form-grid">
             <div class="form-group">
-                <label for="data">Data:</label>
+                <label for="data">Data startu:</label>
                 <input type="date" id="data" required>
             </div>
             <div class="form-group">
                 <label for="trasa">Trasa / Opis:</label>
-                <input type="text" id="trasa" placeholder="np. Poznań - Berlin" required>
+                <input type="text" id="trasa" placeholder="np. Kontener Poznań" required>
             </div>
             <div class="form-group">
                 <label for="km">Kilometry (km):</label>
                 <input type="number" id="km" placeholder="450" required>
             </div>
             <div class="form-group">
-                <label for="czas">Czas (np. 08:30):</label>
-                <input type="text" id="czas" placeholder="08:30" required>
+                <label for="godzina_od">Godzina od:</label>
+                <input type="time" id="godzina_od" required>
+            </div>
+            <div class="form-group">
+                <label for="godzina_do">Godzina do:</label>
+                <input type="time" id="godzina_do" required>
             </div>
         </div>
         <button type="submit" class="save-btn">Zapisz dzień</button>
@@ -203,6 +207,7 @@
             <tr>
                 <th>Data</th>
                 <th>Trasa / Opis</th>
+                <th>Godziny</th>
                 <th>Kilometry</th>
                 <th>Czas</th>
                 <th class="actions-cell">Opcje</th>
@@ -222,6 +227,24 @@
 <script>
     // Ustawienie dzisiejszej daty domyślnie w formularzu
     document.getElementById('data').valueAsDate = new Date();
+    document.getElementById('godzina_od').value = "21:00";
+    document.getElementById('godzina_do').value = "05:00";
+
+    // Funkcja obliczająca minuty między godziną "od" i "do" (uwzględniając przejście przez północ)
+    function calculateMinutes(start, end) {
+        if (!start || !end) return 0;
+        const [h1, m1] = start.split(':').map(Number);
+        const [h2, m2] = end.split(':').map(Number);
+        
+        let startMins = h1 * 60 + m1;
+        let endMins = h2 * 60 + m2;
+
+        // Jeśli godzina końca jest mniejsza niż startu, znaczy to, że mija północ (np. 21:00 do 05:00)
+        if (endMins < startMins) {
+            endMins += 24 * 60;
+        }
+        return endMins - startMins;
+    }
 
     // Funkcja ładująca dane i licząca podsumowanie
     function renderApp() {
@@ -233,40 +256,41 @@
         let totalMinutes = 0;
 
         if (entries.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6c757d;">Brak wpisów. Dodaj pierwszy dzień powyżej.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">Brak wpisów. Dodaj pierwszy dzień powyżej.</td></tr>';
             document.getElementById('total-km').innerText = '0 km';
             document.getElementById('total-time').innerText = '0h 0m';
             return;
         }
 
-        // Sortowanie po dacie (opcjonalnie, żeby najnowsze/najstarsze były poukładane)
         entries.forEach((entry, index) => {
             const km = parseFloat(entry.km) || 0;
-            const czasStr = entry.czas || '00:00';
+            const godzOd = entry.godzina_od || '00:00';
+            const godzDo = entry.godzina_do || '00:00';
 
             totalKm += km;
 
-            const parts = czasStr.split(':');
-            if (parts.length === 2) {
-                totalMinutes += parseInt(parts[0]) * 60 + parseInt(parts[1]);
-            }
+            const shiftMinutes = calculateMinutes(godzOd, godzDo);
+            totalMinutes += shiftMinutes;
+
+            const shiftHoursFormatted = `${Math.floor(shiftMinutes / 60)}h ${shiftMinutes % 60}m`;
 
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${entry.data || '-'}</td>
                 <td>${entry.trasa || '-'}</td>
+                <td>${godzOd} - ${godzDo}</td>
                 <td>${km.toLocaleString('pl-PL')} km</td>
-                <td>${czasStr}</td>
+                <td>${shiftHoursFormatted}</td>
                 <td class="actions-cell"><button class="delete-btn" onclick="deleteEntry(${index})">Usuń</button></td>
             `;
             tableBody.appendChild(row);
         });
 
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
+        const totalHoursFinal = Math.floor(totalMinutes / 60);
+        const totalMinutesFinal = totalMinutes % 60;
 
         document.getElementById('total-km').innerText = totalKm.toLocaleString('pl-PL') + ' km';
-        document.getElementById('total-time').innerText = `${hours}h ${minutes}m`;
+        document.getElementById('total-time').innerText = `${totalHoursFinal}h ${totalMinutesFinal}m`;
     }
 
     // Obsługa formularza (zapisywanie)
@@ -277,22 +301,22 @@
             data: document.getElementById('data').value,
             trasa: document.getElementById('trasa').value,
             km: document.getElementById('km').value,
-            czas: document.getElementById('czas').value
+            godzina_od: document.getElementById('godzina_od').value,
+            godzina_do: document.getElementById('godzina_do').value
         };
 
         let entries = JSON.parse(localStorage.getItem('driver_entries')) || [];
         entries.push(newEntry);
         localStorage.setItem('driver_entries', JSON.stringify(entries));
 
-        // Czyszczenie pól trasy, km i czasu (data zostaje lub aktualizuje się)
+        // Czyszczenie pól trasy i kilometrów na kolejny wpis
         document.getElementById('trasa').value = '';
         document.getElementById('km').value = '';
-        document.getElementById('czas').value = '';
 
         renderApp();
     });
 
-    // Funkcja do usuwania pojedynczego wpisu (gdyby się pomylił)
+    // Funkcja do usuwania pojedynczego wpisu
     function deleteEntry(index) {
         let entries = JSON.parse(localStorage.getItem('driver_entries')) || [];
         entries.splice(index, 1);
