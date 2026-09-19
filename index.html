@@ -8,15 +8,15 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             background-color: #f4f6f9;
             color: #333;
         }
         .container {
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
             background: #fff;
-            padding: 25px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             margin-bottom: 30px;
@@ -25,20 +25,21 @@
             text-align: center;
             color: #2c3e50;
         }
-        h1 { font-size: 24px; margin-bottom: 20px; }
-        h2 { font-size: 20px; margin-top: 30px; margin-bottom: 15px; }
+        h1 { font-size: 22px; margin-bottom: 20px; }
+        h2 { font-size: 18px; margin-top: 25px; margin-bottom: 12px; }
 
-        /* Formularz */
+        /* Formularz układ */
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
-        @media (max-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr 1fr;
-            }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
         }
         .form-group label {
             display: block;
@@ -65,32 +66,32 @@
             cursor: pointer;
             width: 100%;
             font-weight: bold;
-            margin-top: 10px;
+            margin-top: 5px;
         }
         button.save-btn:hover { background-color: #219653; }
 
         /* Kafelki podsumowania */
         .summary-container {
             display: flex;
-            gap: 15px;
-            margin: 20px 0;
+            gap: 12px;
+            margin: 15px 0;
         }
         .summary-tile {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
             flex: 1;
             text-align: center;
         }
         .summary-title {
-            font-size: 13px;
+            font-size: 12px;
             color: #6c757d;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             text-transform: uppercase;
         }
         .summary-value {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             color: #212529;
         }
@@ -99,13 +100,13 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 10px;
         }
         th, td {
-            padding: 10px;
+            padding: 8px 10px;
             text-align: left;
             border-bottom: 1px solid #dee2e6;
-            font-size: 14px;
+            font-size: 13px;
         }
         th {
             background-color: #2c3e50;
@@ -120,24 +121,24 @@
             background: #e74c3c;
             color: white;
             border: none;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
         }
         .delete-btn:hover { background: #c0392b; }
 
         /* Przycisk drukowania */
         .print-container {
             text-align: center;
-            margin-top: 25px;
+            margin-top: 20px;
         }
         button.print-btn {
             background-color: #3498db;
             color: white;
             border: none;
-            padding: 12px 25px;
-            font-size: 16px;
+            padding: 10px 20px;
+            font-size: 15px;
             border-radius: 5px;
             cursor: pointer;
         }
@@ -160,19 +161,14 @@
 
     <!-- Formularz do wpisywania -->
     <form id="entry-form">
+        <!-- 1. Opis trasy na samej górze (szeroki) -->
+        <div class="form-group full-width">
+            <label for="trasa">Trasa / Opis:</label>
+            <input type="text" id="trasa" placeholder="np. Kontener Poznań - Berlin" required>
+        </div>
+
         <div class="form-grid">
-            <div class="form-group">
-                <label for="data">Data startu:</label>
-                <input type="date" id="data" required>
-            </div>
-            <div class="form-group">
-                <label for="trasa">Trasa / Opis:</label>
-                <input type="text" id="trasa" placeholder="np. Kontener Poznań" required>
-            </div>
-            <div class="form-group">
-                <label for="km">Kilometry (km):</label>
-                <input type="number" id="km" placeholder="450" required>
-            </div>
+            <!-- 2. Godzina od i do obok siebie -->
             <div class="form-group">
                 <label for="godzina_od">Godzina od:</label>
                 <input type="time" id="godzina_od" required>
@@ -181,7 +177,18 @@
                 <label for="godzina_do">Godzina do:</label>
                 <input type="time" id="godzina_do" required>
             </div>
+
+            <!-- 3. Data i Kilometry na dole obok siebie -->
+            <div class="form-group">
+                <label for="data">Data startu:</label>
+                <input type="date" id="data" required>
+            </div>
+            <div class="form-group">
+                <label for="km">Kilometry (km):</label>
+                <input type="number" id="km" placeholder="450" required>
+            </div>
         </div>
+
         <button type="submit" class="save-btn">Zapisz dzień</button>
     </form>
 
@@ -208,7 +215,7 @@
                 <th>Data</th>
                 <th>Trasa / Opis</th>
                 <th>Godziny</th>
-                <th>Kilometry</th>
+                <th>Km</th>
                 <th>Czas</th>
                 <th class="actions-cell">Opcje</th>
             </tr>
@@ -225,12 +232,11 @@
 </div>
 
 <script>
-    // Ustawienie dzisiejszej daty domyślnie w formularzu
+    // Ustawienie domyślnych wartości
     document.getElementById('data').valueAsDate = new Date();
     document.getElementById('godzina_od').value = "21:00";
     document.getElementById('godzina_do').value = "05:00";
 
-    // Funkcja obliczająca minuty między godziną "od" i "do" (uwzględniając przejście przez północ)
     function calculateMinutes(start, end) {
         if (!start || !end) return 0;
         const [h1, m1] = start.split(':').map(Number);
@@ -239,14 +245,12 @@
         let startMins = h1 * 60 + m1;
         let endMins = h2 * 60 + m2;
 
-        // Jeśli godzina końca jest mniejsza niż startu, znaczy to, że mija północ (np. 21:00 do 05:00)
         if (endMins < startMins) {
             endMins += 24 * 60;
         }
         return endMins - startMins;
     }
 
-    // Funkcja ładująca dane i licząca podsumowanie
     function renderApp() {
         const entries = JSON.parse(localStorage.getItem('driver_entries')) || [];
         const tableBody = document.getElementById('entries-table-body');
@@ -278,8 +282,8 @@
             row.innerHTML = `
                 <td>${entry.data || '-'}</td>
                 <td>${entry.trasa || '-'}</td>
-                <td>${godzOd} - ${godzDo}</td>
-                <td>${km.toLocaleString('pl-PL')} km</td>
+                <td>${godzOd}-${godzDo}</td>
+                <td>${km.toLocaleString('pl-PL')}</td>
                 <td>${shiftHoursFormatted}</td>
                 <td class="actions-cell"><button class="delete-btn" onclick="deleteEntry(${index})">Usuń</button></td>
             `;
@@ -293,7 +297,6 @@
         document.getElementById('total-time').innerText = `${totalHoursFinal}h ${totalMinutesFinal}m`;
     }
 
-    // Obsługa formularza (zapisywanie)
     document.getElementById('entry-form').addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -309,14 +312,13 @@
         entries.push(newEntry);
         localStorage.setItem('driver_entries', JSON.stringify(entries));
 
-        // Czyszczenie pól trasy i kilometrów na kolejny wpis
+        // Czyszczenie pola trasy i km (data i godziny zostają dla wygody)
         document.getElementById('trasa').value = '';
         document.getElementById('km').value = '';
 
         renderApp();
     });
 
-    // Funkcja do usuwania pojedynczego wpisu
     function deleteEntry(index) {
         let entries = JSON.parse(localStorage.getItem('driver_entries')) || [];
         entries.splice(index, 1);
@@ -324,7 +326,6 @@
         renderApp();
     }
 
-    // Uruchomienie przy starcie
     renderApp();
 </script>
 
